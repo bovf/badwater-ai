@@ -158,7 +158,7 @@
       package = lib.mkOption {
         type = lib.types.nullOr lib.types.package;
         default = pkgs.graphify or null;
-        description = "graphify package. Usually provided by the pi-graphify overlay.";
+        description = "graphify package. Usually provided by the graphify-nix overlay.";
       };
 
       extras = lib.mkOption {
@@ -178,8 +178,9 @@
           "gemini"
           "openai"
           "chinese"
+          "terraform"
         ]);
-        default = ["mcp" "pdf" "svg"];
+        default = ["mcp" "pdf" "svg" "terraform"];
         description = "Optional extras compiled into graphify. \"video\" pulls faster-whisper+yt-dlp; \"leiden\" pulls graspologic (Python <3.13).";
       };
 

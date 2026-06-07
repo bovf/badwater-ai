@@ -77,18 +77,18 @@
   graphifySkillPreamble = pkgs.writeText "graphify-skill-preamble.md" ''
     # ⚠ Read this BEFORE running anything from the rest of this skill
 
-    **System context (added by the pi-graphify Nix flake):**
+    **System context (added by the graphify-nix flake):**
 
-    - source: pi-graphify Nix flake (declarative package/module)
+    - source: graphify-nix flake (declarative package/module)
     - system: ${pkgs.stdenv.hostPlatform.system}
     - user: ${config.home.username}
-    - graphify_install: pi-graphify Nix overlay (overlays/graphify/) — NOT pip, uv, or pipx
+    - graphify_install: graphify-nix overlay (overlays/graphify/) — NOT pip, uv, or pipx
     - graphify_version: ${graphifyPkg.version} + local nix-support.patch
     - graphify_binary: ${graphifyPkg}/bin/graphify
     - graphify_python: ${graphifyPkg}/bin/graphify-python (Python interpreter with graphify importable — use for `python -c ...` steps)
     - extras: ${builtins.concatStringsSep ", " cfg.graphify.extras}
 
-    Graphify is **already installed** on this machine via the `pi-graphify`
+    Graphify is **already installed** on this machine via the `graphify-nix`
     Nix overlay. The binary is on PATH at `graphify`; verify with
     `command -v graphify` → `${graphifyPkg}/bin/graphify`.
 
@@ -156,7 +156,7 @@
     ## What's actually in the Nix closure
 
     - graphifyy ${graphifyPkg.version} (PyPI sdist + `overlays/graphify/nix-support.patch`
-      which adds `extract_nix` for `.nix` files and `extract_terraform` for HCL/Terraform)
+      which adds `extract_nix` for `.nix` files; Terraform/HCL support is upstream)
     - datasketch 1.10.0 (packaged inline; not in nixpkgs)
     - Tree-sitter Python bindings for: python, javascript, typescript, java,
       groovy, c, cpp, ruby, c-sharp, kotlin, scala, php, lua, swift, json,
