@@ -13,7 +13,7 @@ graphify-nix -> graphifyy + local .nix extractor
 ## Remote
 
 ```text
-git@gitlab.dobryops.com:bovf/badwater-ai.git
+git@gitlab.dobryops.com:nix/badwater-ai.git
 ```
 
 ## Outputs
@@ -31,7 +31,7 @@ devShells.${system}.default
 
 ```nix
 inputs.badwater-ai = {
-  url = "git+ssh://git@gitlab.dobryops.com/bovf/badwater-ai.git";
+  url = "git+ssh://git@gitlab.dobryops.com/nix/badwater-ai.git";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 
