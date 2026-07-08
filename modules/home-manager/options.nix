@@ -26,8 +26,31 @@
 
       settings = lib.mkOption {
         type = lib.types.attrs;
-        default = {};
-        description = "Base content of ~/.claude/settings.json. Re-applied on every switch; runtime tweaks via `claude mcp add` etc. get clobbered.";
+        default = {
+          permissions.defaultMode = "auto";
+          skipAutoPermissionPrompt = true;
+          model = "claude-fable-5";
+          effortLevel = "xhigh";
+        };
+        description = "Base content of ~/.claude/settings.json. Re-applied on every switch; runtime tweaks (e.g. /model) get clobbered.";
+      };
+
+      keybindings = lib.mkOption {
+        type = lib.types.attrs;
+        default = {
+          "$schema" = "https://www.schemastore.org/claude-code-keybindings.json";
+          "$docs" = "https://code.claude.com/docs/en/keybindings";
+          bindings = [
+            {
+              context = "Chat";
+              bindings = {
+                "ctrl+g" = null;
+                "ctrl+e" = "chat:externalEditor";
+              };
+            }
+          ];
+        };
+        description = "Content of ~/.claude/keybindings.json.";
       };
     };
 

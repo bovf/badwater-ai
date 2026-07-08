@@ -387,6 +387,13 @@ in {
       '';
     })
 
+    (lib.mkIf cfg.claudeCode.enable {
+      home.activation.badwaterClaudeKeybindings = config.lib.dag.entryAfter ["writeBoundary"] ''
+        install -Dm644 ${pkgs.writeText "claude-keybindings.json" (builtins.toJSON cfg.claudeCode.keybindings)} \
+          "$HOME/.claude/keybindings.json"
+      '';
+    })
+
     (lib.mkIf (cfg.opencode.enable && cfg.opencode.graphify.mcp.enable) {
       programs.opencode.settings.mcp.graphify = {
         type = "local";
