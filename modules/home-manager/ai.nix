@@ -32,6 +32,7 @@
   piExtensions = lib.optionals cfg.pi.vim.modal.enable ["${cfg.pi.vim.modal.package}"];
 
   piPackagePaths = map (pkg: "${config.home.homeDirectory}/.pi/agent/nix-packages/${pkg.name}") cfg.pi.packages;
+  piUsesArchimedes = lib.any (pkg: pkg.name == "pi-archimedes") cfg.pi.packages;
 
   piPackageFiles = builtins.listToAttrs (map (pkg: {
       name = ".pi/agent/nix-packages/${pkg.name}";
@@ -57,7 +58,7 @@
     // cfg.pi.extraSettings
   );
 
-  piVimEscapeFix =
+  piKeybindings =
     lib.optionalAttrs cfg.pi.vim.modal.enable {
       # Free Esc for normal-mode entry under pi-vim; ctrl+c stays as interrupt.
       "app.interrupt" = ["ctrl+c"];
@@ -66,6 +67,10 @@
       # ctrl+g (pi's default) collides with zellij's lock-toggle; alt+e is a
       # macOS dead key. ctrl+e is free in pi/zellij/ghostty/macOS.
       "app.editor.external" = ["ctrl+e"];
+    }
+    // lib.optionalAttrs piUsesArchimedes {
+      # Archimedes image-paste owns ctrl+v; disable Pi's built-in handler.
+      "app.clipboard.pasteImage" = [];
     };
 
   graphifyPkg = cfg.graphify.package.override {extras = cfg.graphify.extras;};
@@ -411,7 +416,7 @@ in {
 
     (lib.mkIf cfg.pi.enable {
       home.activation.badwaterPiKeybindings = config.lib.dag.entryAfter ["writeBoundary"] ''
-        install -Dm644 ${pkgs.writeText "pi-keybindings.json" (builtins.toJSON piVimEscapeFix)} \
+        install -Dm644 ${pkgs.writeText "pi-keybindings.json" (builtins.toJSON piKeybindings)} \
           "$HOME/.pi/agent/keybindings.json"
       '';
     })
