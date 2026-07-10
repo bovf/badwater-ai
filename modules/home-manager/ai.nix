@@ -362,16 +362,19 @@ in {
     (lib.mkIf cfg.claudeCode.graphify.enable {
       home.file.".claude/skills/graphify/SKILL.md".source =
         graphifyComposedSkill "skill.md";
+      home.file.".claude/skills/graphify/references".source = "${graphifyPkg}/${pkgs.python3.sitePackages}/graphify/skills/claude/references";
     })
 
     (lib.mkIf cfg.opencode.graphify.enable {
       home.file.".config/opencode/skills/graphify/SKILL.md".source =
         graphifyComposedSkill "skill-opencode.md";
+      home.file.".config/opencode/skills/graphify/references".source = "${graphifyPkg}/${pkgs.python3.sitePackages}/graphify/skills/opencode/references";
     })
 
     (lib.mkIf cfg.pi.graphify.enable {
       home.file.".pi/agent/skills/graphify/SKILL.md".source =
         graphifyComposedSkill "skill-pi.md";
+      home.file.".pi/agent/skills/graphify/references".source = "${graphifyPkg}/${pkgs.python3.sitePackages}/graphify/skills/pi/references";
     })
 
     (lib.mkIf (cfg.pi.enable && cfg.pi.webSearch.enable) {
