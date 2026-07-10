@@ -52,6 +52,11 @@ badwater.ai.pi = {
     hunk-review
     pi-archimedes
     plannotator-pi-extension
+    pi-wait-what
+    pi-lsp
+    pi-chrome-devtools
+    pi-btw
+    pi-goal
   ];
 };
 ```
