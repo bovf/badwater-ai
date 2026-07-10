@@ -49,6 +49,7 @@ badwater.ai.pi = {
   settings.commitRules = true;
 
   packages = with pkgs.piPackages; [
+    hunk-review
     pi-archimedes
     plannotator-pi-extension
   ];

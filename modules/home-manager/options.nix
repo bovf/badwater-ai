@@ -118,6 +118,7 @@
         description = "Nix-managed pi packages exposed through stable local paths in ~/.pi/agent/nix-packages/.";
         example = lib.literalExpression ''
           [
+            { name = "hunk-review"; package = pkgs.piPackages.hunk-review.package; }
             { name = "pi-archimedes"; package = pkgs.pi-archimedes; }
           ]
         '';
