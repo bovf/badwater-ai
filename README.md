@@ -44,13 +44,12 @@ inputs.badwater-ai.homeManagerModules.default
 ```nix
 badwater.ai.pi = {
   enable = true;
-  vim.modal.enable = true;
+  vim.modal.enable = false; # Archimedes Core provides the editor UI
   webSearch.enable = true;
   settings.commitRules = true;
 
   packages = with pkgs.piPackages; [
-    pi-archimedes-todo
-    pi-subagents
+    pi-archimedes
     plannotator-pi-extension
   ];
 };
