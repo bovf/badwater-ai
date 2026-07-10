@@ -118,7 +118,7 @@
         description = "Nix-managed pi packages exposed through stable local paths in ~/.pi/agent/nix-packages/.";
         example = lib.literalExpression ''
           [
-            { name = "rpiv-todo"; package = pkgs.rpiv-todo; }
+            { name = "pi-archimedes-todo"; package = pkgs.pi-archimedes-todo; }
             { name = "pi-subagents"; package = pkgs.pi-subagents; }
           ]
         '';

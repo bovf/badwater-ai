@@ -49,7 +49,7 @@ badwater.ai.pi = {
   settings.commitRules = true;
 
   packages = with pkgs.piPackages; [
-    rpiv-todo
+    pi-archimedes-todo
     pi-subagents
     plannotator-pi-extension
   ];
