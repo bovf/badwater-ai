@@ -148,21 +148,10 @@
 
     **STOP.**
 
-    ## If graphify reports "no LLM API key found"
-
-    The AST/structural extraction has already run. Options, in order:
-
-    1. `--backend ollama` if a local Ollama is reachable (heavy has one; mbair doesn't).
-    2. Export `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` first.
-    3. Stop and ask. **Do NOT fabricate a `manual_semantic.py`** — that
-       produced fake semantic edges in a previous session. Use a real
-       backend or `--no-cluster` to skip the semantic step.
-
     ## What's actually in the Nix closure
 
     - graphifyy ${graphifyPkg.version} (PyPI sdist + `overlays/graphify/nix-support.patch`
       which adds `extract_nix` for `.nix` files; Terraform/HCL support is upstream)
-    - datasketch 1.10.0 (packaged inline; not in nixpkgs)
     - Tree-sitter Python bindings for: python, javascript, typescript, java,
       groovy, c, cpp, ruby, c-sharp, kotlin, scala, php, lua, swift, json,
       rust, **nix**, **hcl** (terraform/opentofu/terragrunt)

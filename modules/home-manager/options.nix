@@ -176,7 +176,7 @@
     };
 
     graphify = {
-      enable = lib.mkEnableOption "graphify CLI (github:safishamsi/graphify)";
+      enable = lib.mkEnableOption "graphify CLI (github:Graphify-Labs/graphify)";
 
       package = lib.mkOption {
         type = lib.types.nullOr lib.types.package;
