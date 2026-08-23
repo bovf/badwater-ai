@@ -154,10 +154,9 @@
 
     ## What's NOT in the closure
 
-    Tree-sitter parsers listed in graphify's pyproject but unused by
-    `extract.py`: go, zig, powershell, elixir, objc, julia, verilog, fortran,
-    bash, dm. Files in those languages fall back to text-mode community
-    detection — no AST.
+    Tree-sitter parsers not packaged by this overlay: go, zig, powershell,
+    elixir, objc, julia, verilog, fortran, bash, dm. Graphify has AST extractors
+    for them, but those extractors report a missing grammar until it is packaged.
 
     ---
 
@@ -184,25 +183,24 @@
       fi
     '';
 
+  graphifyMcpCommand = pkgs.writeShellScript "graphify-mcp" ''
+    exec ${graphifyPkg}/bin/graphify-python -m graphify.serve \
+      "''${CLAUDE_PROJECT_DIR:-$PWD}/graphify-out/graph.json"
+  '';
+
   graphifyMcpEntry = {
-    command = "${graphifyPkg}/bin/graphify";
-    args = ["--mcp"];
+    command = "${graphifyMcpCommand}";
+    args = [];
   };
+
+  claudeGraphifyMcpEntry = {type = "stdio";} // graphifyMcpEntry;
 
   webSearchMcpEntry = {
     command = "${cfg.pi.webSearch.mcpPackage}/bin/pi-search-mcp";
     args = [];
   };
 
-  claudeSettings =
-    cfg.claudeCode.settings
-    // lib.optionalAttrs cfg.claudeCode.graphify.mcp.enable {
-      mcpServers =
-        (cfg.claudeCode.settings.mcpServers or {})
-        // {
-          graphify = graphifyMcpEntry;
-        };
-    };
+  claudeSettings = cfg.claudeCode.settings;
 
   piMcpServers = {
     mcpServers =
@@ -240,12 +238,12 @@
 
     Two equivalent invocations — pick whichever your runtime supports:
 
-    ## MCP tool (preferred)
+    ## MCP tool (when an adapter loads ~/.pi/agent/mcp.json)
 
-    `web_search(query="<query>", max_results=10)` — if the `web-search` MCP server
-    is loaded (registered in ~/.pi/agent/mcp.json), pi exposes the tool directly.
+    `web_search(query="<query>", max_results=10)` — Pi core does not load this
+    file itself, so this is available only when an installed adapter does.
 
-    ## CLI fallback
+    ## CLI (always available)
 
     ```bash
     pi-search "<query>"            # 10 results, JSON
@@ -370,12 +368,31 @@ in {
       home.file.".pi/agent/extensions/badwater-commit-rules.ts".source = piCommitRulesExtension;
     })
 
-    (lib.mkIf (cfg.claudeCode.enable
-      && (cfg.claudeCode.graphify.mcp.enable
-        || cfg.claudeCode.settings != {})) {
+    (lib.mkIf (cfg.claudeCode.enable && cfg.claudeCode.settings != {}) {
       home.activation.badwaterClaudeSettings = config.lib.dag.entryAfter ["writeBoundary"] ''
         install -Dm644 ${pkgs.writeText "claude-settings.json" (builtins.toJSON claudeSettings)} \
           "$HOME/.claude/settings.json"
+      '';
+    })
+
+    (lib.mkIf (cfg.claudeCode.enable && cfg.claudeCode.graphify.mcp.enable) {
+      home.activation.badwaterClaudeMcp = config.lib.dag.entryAfter ["writeBoundary"] ''
+        desired=${lib.escapeShellArg (builtins.toJSON claudeGraphifyMcpEntry)}
+        if ! ${pkgs.jq}/bin/jq -e --argjson desired "$desired" \
+          '.mcpServers.graphify == $desired' "$HOME/.claude.json" >/dev/null 2>&1; then
+          if ${pkgs.jq}/bin/jq -e '.mcpServers.graphify' "$HOME/.claude.json" >/dev/null 2>&1; then
+            ${cfg.claudeCode.package}/bin/claude mcp remove --scope user graphify
+          fi
+          ${cfg.claudeCode.package}/bin/claude mcp add-json --scope user graphify "$desired"
+        fi
+      '';
+    })
+
+    (lib.mkIf (cfg.claudeCode.enable && !cfg.claudeCode.graphify.mcp.enable) {
+      home.activation.badwaterClaudeMcp = config.lib.dag.entryAfter ["writeBoundary"] ''
+        if ${pkgs.jq}/bin/jq -e '.mcpServers.graphify' "$HOME/.claude.json" >/dev/null 2>&1; then
+          ${cfg.claudeCode.package}/bin/claude mcp remove --scope user graphify
+        fi
       '';
     })
 
@@ -389,7 +406,7 @@ in {
     (lib.mkIf (cfg.opencode.enable && cfg.opencode.graphify.mcp.enable) {
       programs.opencode.settings.mcp.graphify = {
         type = "local";
-        command = ["${graphifyPkg}/bin/graphify" "--mcp"];
+        command = [graphifyMcpEntry.command] ++ graphifyMcpEntry.args;
         enabled = true;
       };
     })

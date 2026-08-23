@@ -21,7 +21,7 @@
 
       graphify = {
         enable = lib.mkEnableOption "register graphify as a Claude Code skill";
-        mcp.enable = lib.mkEnableOption "register graphify --mcp as an MCP server in Claude Code";
+        mcp.enable = lib.mkEnableOption "register the Graphify MCP server in Claude Code";
       };
 
       settings = lib.mkOption {
@@ -126,7 +126,7 @@
 
       graphify = {
         enable = lib.mkEnableOption "register graphify as a pi skill";
-        mcp.enable = lib.mkEnableOption "write ~/.pi/agent/mcp.json declaring graphify --mcp (best-effort; pi MCP docs are incomplete)";
+        mcp.enable = lib.mkEnableOption "write Graphify to ~/.pi/agent/mcp.json for MCP adapter extensions (Pi core does not load it)";
       };
 
       vim.modal = {
@@ -159,7 +159,7 @@
         # the agent can fall back via bash if pi's MCP loading doesn't
         # surface the tool. See badwater.ai.pi.graphify.mcp.enable for the
         # same best-effort caveat about pi's MCP support.
-        enable = lib.mkEnableOption "DuckDuckGo web search for pi (MCP + CLI fallback)";
+        enable = lib.mkEnableOption "DuckDuckGo web search for Pi (CLI plus adapter-ready MCP server)";
 
         package = lib.mkOption {
           type = lib.types.nullOr lib.types.package;
@@ -232,7 +232,7 @@
 
       graphify = {
         enable = lib.mkEnableOption "register graphify as an opencode skill";
-        mcp.enable = lib.mkEnableOption "register graphify --mcp as an MCP server in opencode";
+        mcp.enable = lib.mkEnableOption "register the Graphify MCP server in opencode";
       };
 
       ollama = {

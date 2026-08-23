@@ -51,7 +51,10 @@ badwater.ai.pi = {
   packages = with pkgs.piPackages; [
     hunk-review
     pi-archimedes
+    pi-subagents
+    remote-pi
     plannotator-pi-extension
+    ponytail
     pi-wait-what
     pi-lsp
     pi-chrome-devtools
