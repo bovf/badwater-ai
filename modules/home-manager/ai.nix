@@ -77,7 +77,7 @@
   graphifySkillPreamble = pkgs.writeText "graphify-skill-preamble.md" ''
     # ⚠ Read this BEFORE running anything from the rest of this skill
 
-    **System context (added by the graphify-nix flake):**
+    **System context (added by the badwater-ai Home Manager module):**
 
     - source: graphify-nix flake (declarative package/module)
     - system: ${pkgs.stdenv.hostPlatform.system}
@@ -96,7 +96,7 @@
 
     - `uv tool install graphifyy` (any variant)
     - `pip install graphifyy` (with or without `--user`, `--break-system-packages`, `--upgrade`)
-    - `python -m venv graphify-out/.venv && … pip install …` ← the upstream Step 1 fallback lands here
+    - `python -m venv graphify-out/.venv && … pip install …`
     - `pipx install graphifyy`
     - `npm install`, `brew install`, etc.
 
@@ -105,7 +105,7 @@
     Upstream skill.md tries to detect a Python interpreter via the graphify
     binary's shebang. Our Nix wrapper's shebang is
     `#! /nix/store/.../bash -e` (a bash launcher, not a Python one), and the
-    bootstrap's regex (`*[!a-zA-Z0-9/_.-]*`) rejects on the literal space
+    bootstrap's regex (`*[!a-zA-Z0-9/_.@-]*`) rejects on the literal space
     before `-e`. It then falls through to imperative installers. **Skip the
     entire Step 1 block.**
 
@@ -123,11 +123,20 @@
     ```
 
     **If a step requires the Python API** (e.g. `python -c "from graphify.detect import detect; …"`),
-    use this exact line in place of the bootstrap's `$PYTHON`:
+    initialize the upstream sidecars before Step 2, replacing `INPUT_PATH`
+    with the actual local scan path (after Step 0 for URLs):
 
     ```bash
     PYTHON="${graphifyPkg}/bin/graphify-python"
+    GRAPHIFY_ROOT=$(cd -- "INPUT_PATH" && pwd) || exit 1
+    mkdir -p graphify-out
+    printf '%s\n' "$PYTHON" > graphify-out/.graphify_python
+    printf '%s\n' "$GRAPHIFY_ROOT" > graphify-out/.graphify_root
     ```
+
+    Store the **wrapper path**, not Python's `sys.executable`: subsequent
+    `$(cat graphify-out/.graphify_python)` invocations need its Nix environment.
+    This replaces only Step 1's local bookkeeping, never its installers.
 
     `graphify-python` is a regular Python interpreter (`python3 -c "…"`, `-m`,
     interactive REPL — all work normally) with graphify and every tree-sitter
