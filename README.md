@@ -116,7 +116,7 @@ This does not inject the key into MCP or direct `graphify-python` invocations.
 ## Apps / development
 
 ```bash
-export NIX_CONFIG=$'max-jobs = 2\ncores = 4' # process-local build limits
+export NIX_CONFIG="${NIX_CONFIG-}"$'\nmax-jobs = 2\ncores = 4' # preserve existing settings
 nix run .#fmt           # auto-format Nix files with Alejandra
 nix run .#fmt -- --check
 nix run .#update        # update all flake inputs, format, evaluate output tree
