@@ -122,7 +122,10 @@ nix run .#fmt -- --check
 nix run .#update        # update all flake inputs, format, evaluate output tree
 nix flake check --all-systems --allow-import-from-derivation
 nix build --no-link .#devShells.x86_64-linux.default
-python3 tests/test_graphify_skill.py
+nix shell --inputs-from . nixpkgs#python3 --command python3 tests/test_graphify_skill.py
+# Optional: pass built directories containing SKILL.md and references/ to also
+# check composed frontmatter, sidecars, reference targets and the real wrapper:
+# ... tests/test_graphify_skill.py "$builtPiSkillDir" "$builtClaudeSkillDir" "$builtOpencodeSkillDir"
 nix develop            # installs staged-file Alejandra pre-commit hook
 ```
 
@@ -147,7 +150,29 @@ Smoke-test Graphify's CLI/Python/MCP paths and the chosen Pi MCP adapter in an
 isolated environment without credentials. A successful local flake check alone
 is not evidence that those external packages work together.
 
-Integration source audit (2026-09-05): published Pi `0.85.1`
+Dependency refresh (2026-09-20): the complete local input graph (`nixpkgs` only)
+was updated from `9b9402b959a2276982ddd5ad3652a38b97f7c40b` to
+`0a3468a402c449992505b6a9fc5b06580141b750`, matching the upstream
+`nixpkgs-unstable` branch at audit time. The sidecar regression and all-system
+flake evaluation passed; the x86_64-linux development shell was built without
+entering it or activating Home Manager. Integration policy is unchanged.
+
+Pre-publication package-contract check (2026-09-20): a temporary Home Manager
+configuration with local package overrides evaluated on all three supported
+platforms. On x86_64-linux it built all three composed Graphify `0.9.65` skills,
+references, writable-copy sources, stable Pi package links and MCP wrapper.
+The runnable skill regression accepts these built skill directories as optional
+arguments. With Pi `0.86.1`, isolated offline checks loaded the generated stable
+package paths and commit-rule extension, then exercised Archimedes `2.7.3`'s
+actual lazy MCP registration against the generated commands: Graphify
+`graph_stats` on a local fixture and web-search's empty-query response passed.
+Archimedes' packaged duplicate image/delegation exclusions remain intact.
+No agent/model requests, credentials, activation or live settings were used.
+This is **local pre-publication validation**, not actual-GitLab consumer
+validation or a non-native build; effective consumer follows and final GitLab
+revisions still require the downstream checks described above.
+
+Previous integration source audit (2026-09-05): published Pi `0.85.1`
 ([official docs/examples](https://github.com/earendil-works/pi/tree/d981de1229ef899957bbe968bc8dcda02a21f477/packages/coding-agent))
 retains local package paths, settings, keybinding IDs and the commit-rule event
 API. Graphifyy `0.9.54` ([PyPI source](https://pypi.org/project/graphifyy/0.9.54/))
