@@ -80,9 +80,15 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi core does **not** load `~/.pi/agent/mcp.json`: the generated MCP
-configuration needs an installed adapter extension. Web search also has a CLI
-and skill fallback.
+interrupt. Pi `0.99.1`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+MCP extension; SDK sessions must explicitly load the built-in extensions.
+When the stable `pi-archimedes` package is selected, generated settings force
+`"archimedes.mcp": { "enabled": false }`, preserving other keys in that
+namespace. Pi's built-in MCP owns `/mcp` and the server connections; all other
+Archimedes components and packaged image/delegation exclusions are unchanged.
+This avoids Archimedes' lazy `/mcp` registration bypassing Pi's load-time
+replacement check. Do not re-enable that component alongside the builtin.
+Web search also has a CLI and skill fallback; default MCP exposure uses codemode.
 
 ## Graphify integration
 
@@ -126,6 +132,9 @@ nix shell --inputs-from . nixpkgs#python3 --command python3 tests/test_graphify_
 # Optional: pass built directories containing SKILL.md and references/ to also
 # check composed frontmatter, sidecars, reference targets and the real wrapper:
 # ... tests/test_graphify_skill.py "$builtPiSkillDir" "$builtClaudeSkillDir" "$builtOpencodeSkillDir"
+# Integration-only: tests/test_pi_mcp.mjs accepts a temporary HM manifest with
+# homeDir, pi.path and packages.<name>.path; run Node 24 in that generated HOME
+# under env -i PI_OFFLINE=1 and unshare -Urn, never against live settings.
 nix develop            # installs staged-file Alejandra pre-commit hook
 ```
 
@@ -146,31 +155,46 @@ After package-owner updates, the consumer must evaluate/build the combined Home
 Manager configuration **without activation**, check stable Pi package links and
 extension loading, and build all three composed Graphify skills (frontmatter,
 references, Python site-packages alignment, wrapper and parser availability).
-Smoke-test Graphify's CLI/Python/MCP paths and the chosen Pi MCP adapter in an
-isolated environment without credentials. A successful local flake check alone
+Smoke-test Graphify's CLI/Python/MCP paths and Pi's built-in MCP route in an
+isolated environment without credentials. Load the CLI's actual built-in
+factories, verify exactly one `/mcp` owner after Archimedes' lazy handler, and
+exercise local initialize/list/get_node in cwd and `CLAUDE_PROJECT_DIR` modes. A successful local flake check alone
 is not evidence that those external packages work together.
 
-Dependency refresh (2026-09-20): the complete local input graph (`nixpkgs` only)
-was updated from `9b9402b959a2276982ddd5ad3652a38b97f7c40b` to
-`0a3468a402c449992505b6a9fc5b06580141b750`, matching the upstream
-`nixpkgs-unstable` branch at audit time. The sidecar regression and all-system
-flake evaluation passed; the x86_64-linux development shell was built without
-entering it or activating Home Manager. Integration policy is unchanged.
+Dependency refresh (2026-09-30): the complete local input graph (`nixpkgs` only)
+was updated from `0a3468a402c449992505b6a9fc5b06580141b750` to
+`b6c8664de9b6cc07fe5666a29f91884ba81197c4`, matching the upstream
+[`nixpkgs-unstable` branch](https://api.github.com/repos/NixOS/nixpkgs/commits/nixpkgs-unstable)
+at audit time. The sidecar regression and all-system flake evaluation passed;
+the x86_64-linux development shell and both apps were realized without entering
+the shell or activating Home Manager.
 
-Pre-publication package-contract check (2026-09-20): a temporary Home Manager
+Pre-publication package-contract check (2026-09-30): a temporary Home Manager
 configuration with local package overrides evaluated on all three supported
-platforms. On x86_64-linux it built all three composed Graphify `0.9.65` skills,
+platforms. On x86_64-linux it built all three composed Graphify `0.9.72` skills,
 references, writable-copy sources, stable Pi package links and MCP wrapper.
-The runnable skill regression accepts these built skill directories as optional
-arguments. With Pi `0.86.1`, isolated offline checks loaded the generated stable
-package paths and commit-rule extension, then exercised Archimedes `2.7.3`'s
-actual lazy MCP registration against the generated commands: Graphify
-`graph_stats` on a local fixture and web-search's empty-query response passed.
-Archimedes' packaged duplicate image/delegation exclusions remain intact.
-No agent/model requests, credentials, activation or live settings were used.
-This is **local pre-publication validation**, not actual-GitLab consumer
-validation or a non-native build; effective consumer follows and final GitLab
-revisions still require the downstream checks described above.
+The skill regression passed against these actual composed files. Pi `0.99.1`
+and Archimedes `2.8.0` exposed a lazy-registration collision with builtin MCP;
+the owner explicitly selected Pi's builtin route and disabled only Archimedes'
+MCP component. The new `tests/test_pi_mcp.mjs` loads the CLI's real builtin
+factories, exercises Archimedes' actual lazy gate and checks a single `/mcp`
+owner. A real in-memory SDK session starts only the MCP/discovery lifecycle;
+local initialize/list, 11 unique tools, Graphify `graph_stats` and
+`get_node` (label and node_id), and empty web-search passed in both root modes.
+The real `pi mcp list` diagnostic also passed. No prompts, credentials,
+activation or live settings were used; unrelated extension lifecycles were
+not started.
+
+Two package metadata warnings remain for package-owner review: `remote-pi`
+declares Pi core/TUI/typebox as dependencies, and `rpiv-todo` declares typebox
+likewise. Local copies exist; Pi's extension loader supplies host aliases,
+but native imports can bypass them. The regression retains these exact
+warnings, rejects unexpected ones and requires zero loader errors; this is
+not proof that all runtime paths avoid duplicate modules. Standalone loading
+also retains pi-subagents' host-detection/eager-tool warning.
+This is **local pre-publication validation**, not published-ref consumer
+validation or a non-native build. Effective consumer follows and final
+published revisions still require the downstream checks described above.
 
 Previous integration source audit (2026-09-05): published Pi `0.85.1`
 ([official docs/examples](https://github.com/earendil-works/pi/tree/d981de1229ef899957bbe968bc8dcda02a21f477/packages/coding-agent))

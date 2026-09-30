@@ -55,6 +55,11 @@
       piVim = cfg.pi.vim.modal.settings;
     }
     // cfg.pi.extraSettings
+    // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-archimedes") cfg.pi.packages) {
+      # Archimedes registers /mcp lazily, after Pi's builtin replacement check.
+      # Keep Pi's builtin MCP as the sole owner, preserving other plugin settings.
+      "archimedes.mcp" = (cfg.pi.extraSettings."archimedes.mcp" or {}) // {enabled = false;};
+    }
   );
 
   piKeybindings =
@@ -164,7 +169,8 @@
     ## What's NOT in the closure
 
     Tree-sitter parsers not packaged by this overlay: go, zig, powershell,
-    elixir, objc, julia, verilog, fortran, bash, dm. Graphify has AST extractors
+    elixir, objc, julia, verilog, fortran, bash, dm, vbnet, r, erlang, solidity.
+    Graphify has AST extractors
     for them, but those extractors report a missing grammar until it is packaged.
 
     ---
@@ -247,10 +253,13 @@
 
     Two equivalent invocations — pick whichever your runtime supports:
 
-    ## MCP tool (when an adapter loads ~/.pi/agent/mcp.json)
+    ## MCP tool (Pi's built-in MCP support)
 
-    `web_search(query="<query>", max_results=10)` — Pi core does not load this
-    file itself, so this is available only when an installed adapter does.
+    Pi's CLI reads `~/.pi/agent/mcp.json`. The tool is
+    `mcp__web-search__web_search` with `query` and `max_results` arguments;
+    use Pi's codemode discovery with the default MCP exposure. SDK sessions
+    must explicitly load the built-in extensions. Archimedes' MCP component
+    is disabled to avoid duplicate connections and `/mcp` commands.
 
     ## CLI (always available)
 

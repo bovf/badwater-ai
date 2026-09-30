@@ -126,7 +126,7 @@
 
       graphify = {
         enable = lib.mkEnableOption "register graphify as a pi skill";
-        mcp.enable = lib.mkEnableOption "write Graphify to ~/.pi/agent/mcp.json for MCP adapter extensions (Pi core does not load it)";
+        mcp.enable = lib.mkEnableOption "write Graphify to ~/.pi/agent/mcp.json for Pi's built-in MCP support (SDK sessions must load it explicitly)";
       };
 
       vim.modal = {
@@ -155,10 +155,9 @@
 
       webSearch = {
         # DuckDuckGo via ddgr; no API key, no quota. MCP wires into
-        # ~/.pi/agent/mcp.json; CLI ships `pi-search` + a skill manifest so
-        # the agent can fall back via bash if pi's MCP loading doesn't
-        # surface the tool. See badwater.ai.pi.graphify.mcp.enable for the
-        # same best-effort caveat about pi's MCP support.
+        # ~/.pi/agent/mcp.json for Pi's built-in MCP support; CLI ships
+        # `pi-search` + a skill manifest as a bash fallback. SDK sessions
+        # must explicitly load the built-in MCP extension.
         enable = lib.mkEnableOption "DuckDuckGo web search for Pi (CLI plus adapter-ready MCP server)";
 
         package = lib.mkOption {
