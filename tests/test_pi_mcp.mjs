@@ -1,4 +1,6 @@
-// Run with Node 24 under env -i HOME=<generated fixture> PI_OFFLINE=1 unshare -Urn.
+// Run with Node 24 in a private filesystem/network namespace (only /nix/store,
+// this test and a fresh generated HOME exposed), env -i PI_OFFLINE=1.
+// Network isolation alone does not hide host Unix sockets or absolute home paths.
 // Argument: pre-publication manifest from the temporary Home Manager fixture.
 // Loads the CLI's actual builtin factories, but starts only MCP/discovery lifecycle:
 // no other extension lifecycle, model calls, browser/LSP/relay or hardware activity.
@@ -26,14 +28,7 @@ const loader = new sdk.DefaultResourceLoader({
 await loader.reload();
 const loaded = loader.getExtensions();
 assert.deepEqual(loaded.errors, []);
-const peerWarnings = {
-  'remote-pi': '@earendil-works/pi-coding-agent, @earendil-works/pi-tui, typebox',
-  'rpiv-todo': 'typebox',
-};
-assert.deepEqual(loaded.warnings, Object.entries(peerWarnings).map(([name, packages]) => ({
-  path: `${agentDir}/nix-packages/${name}/package.json`,
-  warning: `Host-provided extension packages must be declared in peerDependencies with a "*" range, not dependencies: ${packages}. Installed copies can bypass the extension loader and create duplicate runtime modules.`,
-})));
+assert.deepEqual(loaded.warnings, []);
 console.log(JSON.stringify({packageWarnings: loaded.warnings}));
 for (const result of [loader.getSkills(), loader.getPrompts(), loader.getThemes()]) {
   assert.deepEqual(result.diagnostics, []);
@@ -43,10 +38,9 @@ assert(loader.getSkills().skills.some(s => s.name === 'web-search'));
 const arch = loaded.extensions.find(e => e.path.includes('/pi-archimedes'));
 assert(arch);
 const starts = arch.handlers.get('session_start');
-const count = starts.length;
-// Actual lazy gate must leave MCP disabled; other component registrations survive.
+// Execute the actual lazy handler: older Archimedes gates MCP here; 2.9
+// removes that component entirely. Neither may take ownership from builtin MCP.
 await starts.at(-1)({type: 'session_start'}, {hasUI: false});
-assert.equal(starts.length, count);
 assert(!arch.tools.has('mcp'));
 assert(!arch.commands.has('mcp'));
 assert(arch.tools.has('manage_todo_list'));
@@ -54,12 +48,21 @@ assert(!arch.tools.has('subagent'));
 const archSource = fs.readFileSync(`${manifest.packages['pi-archimedes'].path}/src/index.ts`, 'utf8');
 assert(archSource.includes('false /* Pi core owns clipboard image handling. */'));
 assert(archSource.includes('false /* pi-subagents owns delegation. */'));
+const archManifest = JSON.parse(fs.readFileSync(`${manifest.packages['pi-archimedes'].path}/package.json`, 'utf8'));
+if (!archManifest.dependencies?.['@pi-archimedes/mcp']) {
+  assert(!archSource.includes('@pi-archimedes/mcp'));
+  assert(!archSource.includes('registerMcp'));
+  const plugins = fs.readFileSync(`${manifest.packages['pi-archimedes'].path}/src/plugins.ts`, 'utf8');
+  assert(!plugins.includes('@pi-archimedes/mcp'));
+  assert(!plugins.includes('archimedes.mcp'));
+  console.log('PASS: installed Archimedes has no MCP component; historical disabled gate not exercised');
+}
 assert.deepEqual(loaded.extensions.filter(e => e.commands.has('mcp')).map(e => e.path), ['builtin:mcp']);
 const commit = loaded.extensions.find(e => e.path.endsWith('badwater-commit-rules.ts'));
 const rules = await commit.handlers.get('before_agent_start')[0]({systemPrompt: 'base'}, {});
 assert(rules.systemPrompt.startsWith('base'));
 assert(rules.systemPrompt.includes('Do not add Co-authored-by'));
-console.log(`PASS: ${loaded.extensions.length} CLI-equivalent factories; resources; lazy Archimedes exclusion; exactly one /mcp owner`);
+console.log(`PASS: ${loaded.extensions.length} CLI-equivalent factories; resources; actual Archimedes lazy handler; exactly one /mcp owner`);
 
 // Real SDK session with the already loaded CLI MCP/discovery factories only.
 // Explicit static inert model avoids default model/credential availability selection.
@@ -89,10 +92,11 @@ try {
   assert.deepEqual(errors, []);
   assert(!notifications.some(n => n.level === 'error' || n.level === 'warning'), JSON.stringify(notifications));
   const names = loaded.extensions.flatMap(e => [...e.tools.keys()]).filter(n => n.startsWith('mcp__'));
+  console.log(JSON.stringify({tools: names}));
   assert(names.length > 2);
   assert.equal(names.length, new Set(names).size);
   assert(names.includes('mcp__graphify__get_node'));
-  assert(names.includes('mcp__web-search__web_search'));
+  assert(names.includes('mcp__web_search__web_search'));
   assert(session.getActiveToolNames().includes('codemode'));
   const call = async (name, args) => {
     const result = await mcp.tools.get(name).definition.execute('contract', args, undefined, undefined, ctx);
@@ -103,7 +107,7 @@ try {
   for (const args of [{label: 'sample'}, {node_id: 'sample.nix::sample'}]) {
     assert((await call('mcp__graphify__get_node', args)).includes('sample.nix::sample'));
   }
-  assert((await call('mcp__web-search__web_search', {query: ''})).includes('empty query'));
+  assert((await call('mcp__web_search__web_search', {query: ''})).includes('empty query'));
   assert.equal(session.sessionFile, undefined);
   assert.equal(session.messages.length, 0);
   console.log(`PASS: builtin initialize/list, ${names.length} unique MCP tools, graph_stats/get_node(label/node_id), empty search; in-memory SDK session without prompts`);

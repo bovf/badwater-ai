@@ -56,8 +56,8 @@
     }
     // cfg.pi.extraSettings
     // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-archimedes") cfg.pi.packages) {
-      # Archimedes registers /mcp lazily, after Pi's builtin replacement check.
-      # Keep Pi's builtin MCP as the sole owner, preserving other plugin settings.
+      # Older Archimedes registers /mcp lazily; 2.9 removes that component.
+      # Retain the compatibility guard, preserving other plugin settings.
       "archimedes.mcp" = (cfg.pi.extraSettings."archimedes.mcp" or {}) // {enabled = false;};
     }
   );
@@ -256,7 +256,7 @@
     ## MCP tool (Pi's built-in MCP support)
 
     Pi's CLI reads `~/.pi/agent/mcp.json`. The tool is
-    `mcp__web-search__web_search` with `query` and `max_results` arguments;
+    `mcp__web_search__web_search` with `query` and `max_results` arguments;
     use Pi's codemode discovery with the default MCP exposure. SDK sessions
     must explicitly load the built-in extensions. Archimedes' MCP component
     is disabled to avoid duplicate connections and `/mcp` commands.
