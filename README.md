@@ -80,7 +80,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `0.99.2`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.0.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -135,7 +135,8 @@ nix shell --inputs-from . nixpkgs#python3 --command python3 tests/test_graphify_
 # check composed frontmatter, sidecars, reference targets and the real wrapper:
 # ... tests/test_graphify_skill.py "$builtPiSkillDir" "$builtClaudeSkillDir" "$builtOpencodeSkillDir"
 # Integration-only: tests/test_pi_mcp.mjs accepts a temporary HM manifest with
-# homeDir, pi.path and packages.<name>.path; run Node 24 in that generated HOME
+# homeDir, pi.path, packages.<name>.path and graphify.{path,sitePackages};
+# run Node 24 in that generated HOME
 # under env -i PI_OFFLINE=1 in a private filesystem AND network namespace,
 # exposing only /nix/store, the tests and that fixture, never live settings.
 # Also run pi-nix/tests/bundled-cli.mjs <pi-output> --existing-settings in
@@ -164,9 +165,53 @@ Smoke-test Graphify's CLI/Python/MCP paths and Pi's built-in MCP route in an
 isolated environment without credentials. Load the CLI's actual built-in
 factories, verify exactly one `/mcp` owner after Archimedes' actual lazy handler,
 and exercise local initialize/list/get_node in cwd and `CLAUDE_PROJECT_DIR` modes.
-Pi `0.99.2` sanitizes hyphens in tool names: the unchanged `web-search` server
+Pi `1.0.0` sanitizes hyphens in tool names: the unchanged `web-search` server
 exports `mcp__web_search__web_search`. A successful local flake check alone is not
 evidence that those external packages work together.
+
+Dependency audit (2026-10-02, independent policy stage): the existing updater
+completed once; the sole input, `nixpkgs`, advanced from
+`b6c8664de9b6cc07fe5666a29f91884ba81197c4` to
+`c9fe7d12cd78d1adcd12dd15e24432dde5b155a0`, matching the authoritative
+[`nixpkgs-unstable` branch](https://api.github.com/repos/NixOS/nixpkgs/commits/nixpkgs-unstable)
+at audit time. The channel and all policy sources remain unchanged; there are
+no owned npm/PyPI pins or nested dependency locks. All-system flake evaluation
+and the source-side skill regression passed; the x86_64-linux development shell
+and both apps were realized with external temporary roots, without entering the
+shell or activating Home Manager. Independent redacted Gitleaks and offline
+TruffleHog scans cover the tracked candidate snapshot. This stage does not claim
+compatibility with the October 2 package candidates: generated-resource and
+installed-runtime contract checks follow the package-owner handoffs separately.
+
+Pre-publication package-contract check (2026-10-02): a temporary Home Manager
+fixture with completed local package overrides evaluated on all three supported
+platforms. Native generated writable-copy sources, stable package links, MCP
+wrapper and all three Graphify `0.9.74` skills/references were built and tested.
+Pi `1.0.0` loaded these generated resources with zero host-peer package warnings,
+errors or diagnostics. Native host module identity, standalone imports and
+negative controls passed, as did the installed subagents preload/heavy-runner
+boundary, inert child SDK lifecycle and separate Pi server Unix handshake.
+No subagent task was dispatched.
+
+The retained MCP regression checks the installed canonical naming function and
+exact source-backed inventory: ten Graphify tools plus
+`mcp__web_search__web_search`, all unique. Initialize/list, Graphify
+`graph_stats`/`get_node` by label and node_id, and empty search passed in cwd and
+`CLAUDE_PROJECT_DIR` modes. Archimedes `2.9`'s actual lazy handler ran; MCP remains
+absent and builtin Pi retains sole `/mcp` ownership. The older-package guard and
+clipboard-image/delegation exclusions remain unchanged.
+
+The existing installed bundled CLI regression separately loaded generated
+selection/preferences and passed RPC startup/shutdown with zero warnings,
+restoring exact settings bytes; keybindings and MCP bytes stayed unchanged.
+OpenAI/`gpt-5.6-sol`/dark/`ctrl+e` and enabled compaction with 32000 reserve and
+60000 recent tokens were preserved. Installed wrappers/hooks were source-traced
+before all runtime checks in private filesystem/network namespaces with cleared
+environments, synthetic HOME/cwd and read-only Nix store, never live homes or
+host sockets. Independent redacted Gitleaks and offline TruffleHog scans passed.
+This is generated-resource/bundled-startup coverage, not full TUI, model/provider,
+auth, browser/LSP, remote-service or hardware testing. Non-native platforms were
+evaluated only; published consumer refs/follows still need downstream validation.
 
 Dependency audit (2026-10-01, independent policy stage): the existing updater
 completed; the sole input, `nixpkgs`, remains at

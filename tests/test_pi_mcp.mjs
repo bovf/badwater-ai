@@ -93,10 +93,14 @@ try {
   assert(!notifications.some(n => n.level === 'error' || n.level === 'warning'), JSON.stringify(notifications));
   const names = loaded.extensions.flatMap(e => [...e.tools.keys()]).filter(n => n.startsWith('mcp__'));
   console.log(JSON.stringify({tools: names}));
-  assert(names.length > 2);
+  const { createMcpToolName } = await import(pathToFileURL(`${root}/dist/extensions/mcp/tools.js`));
+  assert.equal(createMcpToolName('web-search', 'web_search'), 'mcp__web_search__web_search');
+  const graphifySource = fs.readFileSync(`${manifest.graphify.path}/${manifest.graphify.sitePackages}/graphify/serve.py`, 'utf8');
+  const graphifyNames = [...graphifySource.matchAll(/types\.Tool\(\s*name="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(graphifyNames.length, 10, 'current installed Graphify tool inventory');
+  const expectedNames = [...graphifyNames.map(n => createMcpToolName('graphify', n)), 'mcp__web_search__web_search'];
   assert.equal(names.length, new Set(names).size);
-  assert(names.includes('mcp__graphify__get_node'));
-  assert(names.includes('mcp__web_search__web_search'));
+  assert.deepEqual(names.toSorted(), expectedNames.toSorted());
   assert(session.getActiveToolNames().includes('codemode'));
   const call = async (name, args) => {
     const result = await mcp.tools.get(name).definition.execute('contract', args, undefined, undefined, ctx);
