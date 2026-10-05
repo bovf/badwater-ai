@@ -10,6 +10,12 @@ pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
+`pi-nix` now consumes the official Pi 1.0.2 flake recipe with the consumer's
+followed nixpkgs. It retains the existing package registry and four SDK/Unix
+libraries in one host output; this module still owns policy, not a core build.
+The integration test uses that core's Node 22 and hoisted coding-agent root
+(`lib/pi/node_modules/@earendil-works/pi-coding-agent`).
+
 ## Remote
 
 ```text
@@ -80,7 +86,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.0.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.0.2`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -136,7 +142,7 @@ nix shell --inputs-from . nixpkgs#python3 --command python3 tests/test_graphify_
 # ... tests/test_graphify_skill.py "$builtPiSkillDir" "$builtClaudeSkillDir" "$builtOpencodeSkillDir"
 # Integration-only: tests/test_pi_mcp.mjs accepts a temporary HM manifest with
 # homeDir, pi.path, packages.<name>.path and graphify.{path,sitePackages};
-# run Node 24 in that generated HOME
+# run the core's Node 22 in that generated HOME
 # under env -i PI_OFFLINE=1 in a private filesystem AND network namespace,
 # exposing only /nix/store, the tests and that fixture, never live settings.
 # Also run pi-nix/tests/bundled-cli.mjs <pi-output> --existing-settings in

@@ -1,4 +1,4 @@
-// Run with Node 24 in a private filesystem/network namespace (only /nix/store,
+// Run with the official Node 22 in a private filesystem/network namespace (only /nix/store,
 // this test and a fresh generated HOME exposed), env -i PI_OFFLINE=1.
 // Network isolation alone does not hide host Unix sockets or absolute home paths.
 // Argument: pre-publication manifest from the temporary Home Manager fixture.
@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 assert.equal(process.env.HOME, manifest.homeDir);
 assert(manifest.homeDir.startsWith('/tmp/'));
-const root = `${manifest.pi.path}/lib/node_modules/pi-monorepo`;
+const root = `${manifest.pi.path}/lib/pi/node_modules/@earendil-works/pi-coding-agent`;
 const sdk = await import(pathToFileURL(`${root}/dist/index.js`));
 const { builtInExtensions } = await import(pathToFileURL(`${root}/dist/extensions/index.js`));
 const agentDir = `${process.env.HOME}/.pi/agent`;
