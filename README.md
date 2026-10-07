@@ -10,7 +10,7 @@ pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
-`pi-nix` now consumes the official Pi 1.0.2 flake recipe with the consumer's
+`pi-nix` now consumes the official Pi 1.0.4 flake recipe with the consumer's
 followed nixpkgs. It retains the existing package registry and four SDK/Unix
 libraries in one host output; this module still owns policy, not a core build.
 The integration test uses that core's Node 22 and hoisted coding-agent root
@@ -86,7 +86,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.0.2`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.0.4`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -97,6 +97,13 @@ replacement check. Archimedes `2.9` removes its MCP component; the setting remai
 as a compatibility guard for older packages. Do not re-enable that component
 alongside the builtin.
 Web search also has a CLI and skill fallback; default MCP exposure uses codemode.
+
+Selecting `pi-chrome-devtools` supplies `defaultTools = ["+codemode"]` before
+merging `extraSettings`. Chrome 0.54 no longer activates host tools itself, and
+MCP connects in the background: browser capabilities must not depend on its
+connection timing. The additive default preserves Pi's normal tools; an explicit
+`extraSettings.defaultTools` still wins. Users intentionally disabling codemode
+should select Chrome's direct/lazy exposure. No browser is launched at startup.
 
 ## Graphify integration
 
@@ -174,6 +181,18 @@ and exercise local initialize/list/get_node in cwd and `CLAUDE_PROJECT_DIR` mode
 Pi `1.0.0` sanitizes hyphens in tool names: the unchanged `web-search` server
 exports `mcp__web_search__web_search`. A successful local flake check alone is not
 evidence that those external packages work together.
+
+Dependency/contract audit (2026-10-07): the existing updater advances the sole
+nixpkgs input to `7dd199b0e2993e37b4775ed66b1c291699608c9f`. The only policy
+change is the conditional additive codemode default above. Generated settings
+on all four Pi homes retain OpenAI/`gpt-5.6-sol`/dark, compaction 32000/60000,
+stable package links, writable 0644 copies and `ctrl+e`; Sniper stays disabled.
+With local Pi 1.0.4/Graphify 0.9.80 candidates, seven isolated consumer runtime
+gates pass, including eleven canonical MCP tools in both root modes, original
+settings restoration, the native background SDK lifecycle and the separate
+Unix handshake. Six actual Linux Pi/OpenCode skill trees pass; Darwin policy
+is recipe/evaluation-only. These are local pre-publication checks, not deployed
+or authenticated-service acceptance.
 
 Dependency audit (2026-10-02, independent policy stage): the existing updater
 completed once; the sole input, `nixpkgs`, advanced from

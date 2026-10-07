@@ -54,6 +54,10 @@
     // lib.optionalAttrs cfg.pi.vim.modal.enable {
       piVim = cfg.pi.vim.modal.settings;
     }
+    // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-chrome-devtools") cfg.pi.packages) {
+      # Chrome's codemode capabilities must work before background MCP connects.
+      defaultTools = ["+codemode"];
+    }
     // cfg.pi.extraSettings
     // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-archimedes") cfg.pi.packages) {
       # Older Archimedes registers /mcp lazily; 2.9 removes that component.

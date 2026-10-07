@@ -21,6 +21,10 @@ assert(!fs.lstatSync(`${agentDir}/settings.json`).isSymbolicLink());
 assert(!fs.lstatSync(`${agentDir}/keybindings.json`).isSymbolicLink());
 for (const path of settings.packages) assert(fs.lstatSync(path).isSymbolicLink());
 const settingsManager = sdk.SettingsManager.create(process.cwd(), agentDir);
+if (manifest.packages['pi-chrome-devtools']) {
+  assert(settingsManager.getDefaultTools()?.includes('codemode'),
+    'Chrome capabilities need codemode before background MCP connections finish');
+}
 const loader = new sdk.DefaultResourceLoader({
   cwd: process.cwd(), agentDir, settingsManager, noContextFiles: true,
   extensionFactories: builtInExtensions,
