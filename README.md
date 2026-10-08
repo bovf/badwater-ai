@@ -10,7 +10,7 @@ pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
-`pi-nix` now consumes the official Pi 1.0.4 flake recipe with the consumer's
+`pi-nix` now consumes the official Pi 1.1.0 flake recipe with the consumer's
 followed nixpkgs. It retains the existing package registry and four SDK/Unix
 libraries in one host output; this module still owns policy, not a core build.
 The integration test uses that core's Node 22 and hoisted coding-agent root
@@ -86,7 +86,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.0.4`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.1.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -182,17 +182,16 @@ Pi `1.0.0` sanitizes hyphens in tool names: the unchanged `web-search` server
 exports `mcp__web_search__web_search`. A successful local flake check alone is not
 evidence that those external packages work together.
 
-Dependency/contract audit (2026-10-07): the existing updater advances the sole
-nixpkgs input to `7dd199b0e2993e37b4775ed66b1c291699608c9f`. The only policy
-change is the conditional additive codemode default above. Generated settings
-on all four Pi homes retain OpenAI/`gpt-5.6-sol`/dark, compaction 32000/60000,
-stable package links, writable 0644 copies and `ctrl+e`; Sniper stays disabled.
-With local Pi 1.0.4/Graphify 0.9.80 candidates, seven isolated consumer runtime
-gates pass, including eleven canonical MCP tools in both root modes, original
-settings restoration, the native background SDK lifecycle and the separate
-Unix handshake. Six actual Linux Pi/OpenCode skill trees pass; Darwin policy
-is recipe/evaluation-only. These are local pre-publication checks, not deployed
-or authenticated-service acceptance.
+Dependency/contract audit (2026-10-08): the full updater rechecks the sole
+nixpkgs input; it remains at `7dd199b0e2993e37b4775ed66b1c291699608c9f`.
+There is no policy-source change. Pi 1.1.0/Graphify 0.9.80 integration must
+retain OpenAI/`gpt-5.6-sol`/dark, compaction 32000/60000, `ctrl+e`, stable
+package links, regular writable 0644 copies, conditional `+codemode` and explicit
+override precedence; Sniper stays disabled. Acceptance checks the generated
+resources, eleven canonical MCP tools in both root modes, settings restoration,
+native background SDK lifecycle and the separate Unix handshake. Six Linux
+Pi/OpenCode skill trees are checked; Darwin policy is recipe/evaluation-only.
+No activation or authenticated-service acceptance is implied.
 
 Dependency audit (2026-10-02, independent policy stage): the existing updater
 completed once; the sole input, `nixpkgs`, advanced from
