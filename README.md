@@ -311,3 +311,7 @@ retains the skill/reference layout and MCP entry point; its Python steps read
 the sidecar initialized by our preamble. These are audit versions, not new pins
 or claims about the consumer's installed versions. Newly offered upstream
 extras/parsers are not automatically enabled or added to this module's options.
+
+## Craft selections and Pi editing
+
+See [composable modules and single MCP ownership](docs/craft-video.md). Exact native apps remain producer-owned; only verified interfaces are registered, and disable never deletes user data.

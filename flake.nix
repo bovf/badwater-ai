@@ -28,6 +28,20 @@
 
     apps = forAllSystems (system: appsLib.mkApps system);
 
+    checks = forAllSystems (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      pi-mcp-merge =
+        pkgs.runCommand "badwater-pi-mcp-merge-tests" {
+          nativeBuildInputs = [pkgs.python3];
+        } ''
+          export PYTHONDONTWRITEBYTECODE=1 HOME="$TMPDIR/home"
+          mkdir -p "$HOME"
+          python3 ${self}/tests/test_pi_mcp_merge.py
+          printf 'PASS additive Pi MCP ownership tests\\n' > "$out"
+        '';
+    });
+
     devShells = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       apps = appsLib.mkApps system;

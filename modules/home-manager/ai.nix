@@ -54,7 +54,7 @@
     // lib.optionalAttrs cfg.pi.vim.modal.enable {
       piVim = cfg.pi.vim.modal.settings;
     }
-    // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-chrome-devtools") cfg.pi.packages) {
+    // lib.optionalAttrs ((builtins.any (pkg: pkg.name == "pi-chrome-devtools") cfg.pi.packages) || hasCodemodeServers) {
       # Chrome's codemode capabilities must work before background MCP connects.
       defaultTools = ["+codemode"];
     }
@@ -221,14 +221,16 @@
 
   claudeSettings = cfg.claudeCode.settings;
 
+  builtinPiServers =
+    lib.optionalAttrs cfg.pi.graphify.mcp.enable {graphify = graphifyMcpEntry;}
+    // lib.optionalAttrs cfg.pi.webSearch.enable {web-search = webSearchMcpEntry;};
+  enabledPiServers = builtinPiServers // cfg.pi.mcpServers;
+  hasCodemodeServers = builtins.any (s: (s.exposure or "codemode") == "codemode") (builtins.attrValues cfg.pi.mcpServers);
   piMcpServers = {
-    mcpServers =
-      lib.optionalAttrs cfg.pi.graphify.mcp.enable {
-        graphify = graphifyMcpEntry;
-      }
-      // lib.optionalAttrs cfg.pi.webSearch.enable {
-        web-search = webSearchMcpEntry;
-      };
+    mcpServers = lib.optionalAttrs cfg.pi.enable enabledPiServers;
+    legacyServers =
+      lib.optionalAttrs (cfg.graphify.enable && cfg.graphify.package != null) {graphify = graphifyMcpEntry;}
+      // lib.optionalAttrs (cfg.pi.webSearch.mcpPackage != null) {web-search = webSearchMcpEntry;};
   };
 
   piCommitRulesExtension = pkgs.writeText "badwater-commit-rules.ts" ''
@@ -292,6 +294,8 @@
 in {
   imports = [
     ./options.nix
+    ./artcraft.nix
+    ./video-editing.nix
   ];
 
   config = lib.mkMerge [
@@ -433,12 +437,14 @@ in {
       };
     })
 
-    (lib.mkIf (cfg.pi.enable && (cfg.pi.graphify.mcp.enable || cfg.pi.webSearch.enable)) {
+    {
+      # One owner also reconciles disablement, without touching credentials/media or unrelated servers.
       home.activation.badwaterPiMcp = config.lib.dag.entryAfter ["writeBoundary"] ''
-        install -Dm644 ${pkgs.writeText "pi-mcp.json" (builtins.toJSON piMcpServers)} \
-          "$HOME/.pi/agent/mcp.json"
+        ${pkgs.python3}/bin/python3 ${./pi-mcp-merge.py} \
+          ${pkgs.writeText "pi-mcp.json" (builtins.toJSON piMcpServers)} \
+          "$HOME/.pi/agent/mcp.json" "$HOME/.pi/agent/badwater-mcp-owned.json"
       '';
-    })
+    }
 
     (lib.mkIf cfg.pi.enable {
       home.activation.badwaterPiKeybindings = config.lib.dag.entryAfter ["writeBoundary"] ''
@@ -449,6 +455,26 @@ in {
 
     {
       assertions = [
+        {
+          assertion = lib.intersectLists (builtins.attrNames builtinPiServers) (builtins.attrNames cfg.pi.mcpServers) == [];
+          message = "Additional Pi MCP servers must not replace enabled managed Graphify/web-search identities.";
+        }
+        {
+          assertion = let
+            names = builtins.attrNames enabledPiServers;
+            normalized = map (builtins.replaceStrings ["-"] ["_"]) names;
+          in
+            lib.all (n: builtins.match "[A-Za-z0-9_-]+" n != null) names && builtins.length (lib.unique normalized) == builtins.length names;
+          message = "Pi MCP server names must be valid and unique after builtin '-'/'_' normalization.";
+        }
+        {
+          assertion = lib.all (s: builtins.isString (s.command or null) && lib.hasPrefix "/" s.command && builtins.isList (s.args or []) && builtins.elem (s.exposure or "deferred") ["codemode" "deferred" "direct" "hidden"]) (builtins.attrValues cfg.pi.mcpServers);
+          message = "Additional Pi MCP servers require absolute stdio commands, argument lists and supported builtin exposure.";
+        }
+        {
+          assertion = !cfg.pi.enable || !hasCodemodeServers || !(cfg.pi.extraSettings ? defaultTools) || (builtins.isList cfg.pi.extraSettings.defaultTools && lib.any (t: t == "+codemode" || t == "codemode") cfg.pi.extraSettings.defaultTools);
+          message = "Codemode MCP exposure requires Pi's codemode tool. Preserve your explicit defaultTools choice: add +codemode or choose deferred/direct exposure.";
+        }
         {
           assertion = !cfg.claudeCode.enable || cfg.claudeCode.package != null;
           message = "badwater.ai.claudeCode.enable requires badwater.ai.claudeCode.package to be set.";

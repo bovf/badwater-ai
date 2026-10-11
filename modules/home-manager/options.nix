@@ -115,13 +115,29 @@
           };
         });
         default = [];
-        description = "Nix-managed pi packages exposed through stable local paths in ~/.pi/agent/nix-packages/.";
+        apply = packages:
+          lib.foldl' (acc: entry: let
+            matches = builtins.filter (p: p.name == entry.name) acc;
+          in
+            if matches == []
+            then acc ++ [entry]
+            else if builtins.all (p: toString p.package == toString entry.package) matches
+            then acc
+            else throw "Duplicate Pi package name '${entry.name}' refers to different outputs; select one explicitly.") []
+          packages;
+        description = "Nix-managed pi packages exposed through stable local paths in ~/.pi/agent/nix-packages/. Equal name/output entries are deduplicated; conflicting identities fail.";
         example = lib.literalExpression ''
           [
             { name = "hunk-review"; package = pkgs.piPackages.hunk-review.package; }
             { name = "pi-archimedes"; package = pkgs.pi-archimedes; }
           ]
         '';
+      };
+
+      mcpServers = lib.mkOption {
+        type = lib.types.attrsOf lib.types.attrs;
+        default = {};
+        description = "Additional stdio server declarations merged by the existing badwaterPiMcp owner. Unique names, absolute managed commands and optional builtin exposure (codemode/deferred/direct/hidden). Do not put credentials in Nix-store configuration.";
       };
 
       graphify = {
