@@ -64,6 +64,18 @@
       };
     };
     video = workflow;
+    videoEditorial = {
+      imports = [workflow];
+      badwater.ai.pi.videoEditing = {
+        editorial.enable = true;
+        asrModel = "small.en";
+      };
+    };
+    videoExcludedEffect = {
+      imports = [workflow];
+      badwater.ai.pi.videoEditing.editorial.enable = true;
+      badwater.ai.artcraft.applications.effectcraft.enable = false;
+    };
     workflowMcpOff = {
       imports = [workflow];
       badwater.ai.pi.videoEditing.mcp.enable = false;

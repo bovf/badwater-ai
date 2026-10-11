@@ -318,3 +318,7 @@ See [composable modules and single MCP ownership](docs/craft-video.md). Exact na
 Enabled video editing creates `~/Videos/Raw` and `~/Videos/BadwaterAI/Projects`
 on Home Manager activation. New projects are saved under the latter; existing
 projects in the previous XDG location are neither moved nor deleted.
+
+### Editorial video policy
+
+`badwater.ai.pi.videoEditing.editorial.enable = true` selects native EffectCraft additively (explicit false overrides still fail the dependency assertion). `asrModel = "small.en"` selects immutable local CPU weights, not a Pi chat model. `effectAssetLimitMiB` bounds generated media; local analysis never authorizes model sharing/final exports. [Workflow policy](docs/craft-video.md).

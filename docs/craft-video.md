@@ -50,7 +50,7 @@ badwater.ai.pi.enable = true;
 badwater.ai.pi.videoEditing.enable = true;
 ```
 
-Minimal dependencies: FilmCraft, SoundCraft, CPU Whisper tiny.en + MIT model card,
+Minimal dependencies: FilmCraft, SoundCraft, CPU Whisper tiny.en (optional small.en) + MIT model card,
 FFmpeg/FFprobe, SQLite/Python MCP/NumPy, the configured CLI and packaged Pi skill.
 No unrelated/non-free application is an implicit dependency. Explicit exclusions
 of required Film/Sound cause clear assertions rather than silently overriding false.
@@ -84,7 +84,7 @@ Additional MCP names are unique after builtin '-'/'_' normalization. Identical
 Pi package name/output pairs deduplicate; conflicting same-name outputs fail.
 The builtin Graphify/web-search identities cannot be replaced by additions.
 
-The video wrapper also routes selected verified apps through `native_catalog`/`native_batch`, without enabling extra direct servers or GUI bridges. ArtCraft remains install-only. Native film plans can add effects/graphics/captions/transitions; Pi's packaged active-model tool and budgeted full-recording visual sweep support context-based planning. The default sweep is every15 seconds with240 total frame attachments per asset; sharing and budget increases require user permission. Other consumers still default to FilmCraft/SoundCraft only; Heavy's explicit all-app selection is consumer-owned.
+The video wrapper also routes selected verified apps through `native_catalog`/`native_batch`, without enabling extra direct servers or GUI bridges. ArtCraft remains install-only. Native film plans can add effects/graphics/captions/transitions; Pi's packaged active-model tool and budgeted full-recording visual sweep support context-based planning. The default sweep is every15 seconds with240 total frame attachments per asset; sharing and budget increases require user permission. Other consumers still default to FilmCraft/SoundCraft only; `videoEditing.editorial.enable = true` additively selects EffectCraft and rejects an explicit false override. `asrModel = "small.en"` selects the larger immutable English model; tiny.en remains the default. `effectAssetLimitMiB` bounds each generated intermediate. Heavy explicitly selects editorial mode, small.en, a3600-second worker deadline and all thirteen apps. Model selection affects only local ASR, not Pi chat/auth. New word/context/batch tools preserve consent and final approval; policy activation never scans media, renders or calls providers.
 
 For commands, plans, models/cache budgets, supported/unsupported editorial scope,
 consent, security/QC, native acceptance and exact opt-in model validation, see

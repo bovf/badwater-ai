@@ -8,7 +8,10 @@
   craft = config.badwater.ai.artcraft;
   ready = cfg.package != null && craft.applications.filmcraft.package != null && craft.applications.soundcraft.package != null && (pkgs.badwater-craft-mcp or null) != null;
   settings = pkgs.writeText "badwater-video-config.json" (builtins.toJSON {
-    inherit (cfg) readRoots writeRoot concurrency timeoutSeconds maxAutomaticRepairAttempts;
+    inherit (cfg) readRoots writeRoot concurrency timeoutSeconds maxAutomaticRepairAttempts asrModel;
+    model = cfg.package.models.${cfg.asrModel}.model;
+    modelHash = cfg.package.models.${cfg.asrModel}.hash;
+    maxEffectAssetBytes = cfg.effectAssetLimitMiB * 1024 * 1024;
     filmcraft = "${craft.applications.filmcraft.package}/bin/filmcraft-cli";
     soundcraft = "${craft.applications.soundcraft.package}/bin/soundcraft-cli";
     craftLauncher = "${pkgs.badwater-craft-mcp}/bin/badwater-craft-mcp";
@@ -30,6 +33,17 @@ in {
       type = lib.types.nullOr lib.types.package;
       default = pkgs.badwater-video or null;
       description = "Linux-only pi-nix workflow runtime with pinned CPU tiny.en Whisper/model, not application repackaging.";
+    };
+    editorial.enable = lib.mkEnableOption "native EffectCraft word animation/effect recipes and cross-app composition (requires selected EffectCraft)";
+    asrModel = lib.mkOption {
+      type = lib.types.enum ["tiny.en" "small.en"];
+      default = "tiny.en";
+      description = "Immutable local CPU English Whisper weights from pi-nix. small.en is a quality/cost option; no runtime downloads or provider calls.";
+    };
+    effectAssetLimitMiB = lib.mkOption {
+      type = lib.types.ints.between 16 4096;
+      default = 1024;
+      description = "Maximum size of one native generated/transparent effect media asset; originals and prior outputs are never pruned.";
     };
     readRoots = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -70,8 +84,17 @@ in {
         enable = lib.mkDefault true;
         applications.filmcraft.enable = lib.mkDefault true;
         applications.soundcraft.enable = lib.mkDefault true;
+        applications.effectcraft.enable = lib.mkIf cfg.editorial.enable (lib.mkDefault true);
       };
       assertions = [
+        {
+          assertion = !cfg.editorial.enable || (craft.applications.effectcraft.enable && craft.applications.effectcraft.package != null);
+          message = "Editorial captions/effect recipes require selected EffectCraft; explicit false is respected.";
+        }
+        {
+          assertion = cfg.package != null && cfg.package ? models && builtins.hasAttr cfg.asrModel cfg.package.models;
+          message = "Selected local ASR model requires a pi-nix editorial runtime with that immutable model output.";
+        }
         {
           assertion = config.badwater.ai.pi.enable;
           message = "badwater.ai.pi.videoEditing.enable requires badwater.ai.pi.enable = true.";
