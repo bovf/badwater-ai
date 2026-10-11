@@ -84,6 +84,8 @@ Additional MCP names are unique after builtin '-'/'_' normalization. Identical
 Pi package name/output pairs deduplicate; conflicting same-name outputs fail.
 The builtin Graphify/web-search identities cannot be replaced by additions.
 
+The video wrapper also routes selected verified apps through `native_catalog`/`native_batch`, without enabling extra direct servers or GUI bridges. ArtCraft remains install-only. Native film plans can add effects/graphics/captions/transitions; Pi's packaged active-model tool and budgeted full-recording visual sweep support context-based planning. The default sweep is every15 seconds with240 total frame attachments per asset; sharing and budget increases require user permission. Other consumers still default to FilmCraft/SoundCraft only; Heavy's explicit all-app selection is consumer-owned.
+
 For commands, plans, models/cache budgets, supported/unsupported editorial scope,
 consent, security/QC, native acceptance and exact opt-in model validation, see
 `pi-nix/docs/video-editing.md` in the sibling producer. Core MCP/discovery owns

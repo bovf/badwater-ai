@@ -6,11 +6,13 @@
 }: let
   cfg = config.badwater.ai.pi.videoEditing;
   craft = config.badwater.ai.artcraft;
-  ready = cfg.package != null && craft.applications.filmcraft.package != null && craft.applications.soundcraft.package != null;
+  ready = cfg.package != null && craft.applications.filmcraft.package != null && craft.applications.soundcraft.package != null && (pkgs.badwater-craft-mcp or null) != null;
   settings = pkgs.writeText "badwater-video-config.json" (builtins.toJSON {
     inherit (cfg) readRoots writeRoot concurrency timeoutSeconds maxAutomaticRepairAttempts;
     filmcraft = "${craft.applications.filmcraft.package}/bin/filmcraft-cli";
     soundcraft = "${craft.applications.soundcraft.package}/bin/soundcraft-cli";
+    craftLauncher = "${pkgs.badwater-craft-mcp}/bin/badwater-craft-mcp";
+    craftApplications = lib.mapAttrs (name: application: "${application.package}/bin/${name}-cli") (lib.filterAttrs (name: application: name != "artcraft" && application.enable && application.package != null) (builtins.removeAttrs craft.applications ["all"]));
   });
   configured = pkgs.symlinkJoin {
     name = "badwater-video-configured-${cfg.package.version}";
