@@ -36,8 +36,8 @@ in {
     };
     writeRoot = lib.mkOption {
       type = lib.types.str;
-      default = "${config.xdg.dataHome}/badwater/video";
-      description = "Persistent derived index/jobs/frames/native revisions/exports. Disabled workflow never deletes user data or cache.";
+      default = "${config.home.homeDirectory}/Videos/BadwaterAI/Projects";
+      description = "Persistent project directories containing index/jobs/frames/native revisions/exports. Created on activation; existing projects at a previous writeRoot are not moved or deleted.";
     };
     concurrency = lib.mkOption {
       type = lib.types.ints.between 1 4;
@@ -89,6 +89,9 @@ in {
       ];
     })
     (lib.mkIf (cfg.enable && ready && config.badwater.ai.pi.enable) {
+      home.activation.badwaterVideoDirectories = config.lib.dag.entryAfter ["writeBoundary"] ''
+        run ${pkgs.coreutils}/bin/mkdir -m 700 -p -- ${lib.escapeShellArgs (cfg.readRoots ++ [cfg.writeRoot])}
+      '';
       home.packages = [configured];
       badwater.ai.pi.packages = lib.mkAfter [
         {

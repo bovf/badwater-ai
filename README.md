@@ -315,3 +315,6 @@ extras/parsers are not automatically enabled or added to this module's options.
 ## Craft selections and Pi editing
 
 See [composable modules and single MCP ownership](docs/craft-video.md). Exact native apps remain producer-owned; only verified interfaces are registered, and disable never deletes user data.
+Enabled video editing creates `~/Videos/Raw` and `~/Videos/BadwaterAI/Projects`
+on Home Manager activation. New projects are saved under the latter; existing
+projects in the previous XDG location are neither moved nor deleted.

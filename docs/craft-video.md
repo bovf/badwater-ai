@@ -60,12 +60,22 @@ remain safe on other platforms. Defaults:
 | Option | Default |
 |---|---|
 | `readRoots` | `~/Videos/Raw` (explicit absolute home path at evaluation) |
-| `writeRoot` | XDG data `badwater/video` |
+| `writeRoot` | `~/Videos/BadwaterAI/Projects` |
 | `concurrency` | 1 (1..4) |
 | `timeoutSeconds` | 1200 (30..7200) |
 | `maxAutomaticRepairAttempts` | 2 (0..3) |
 | `mcp.enable` | true |
 | `mcp.exposure` | `codemode` |
+
+When enabled, Home Manager activation creates the configured `readRoots` and
+`writeRoot`. New leaf directories are private (0700); existing directories, modes
+and contents are preserved. Dry-run/disabled workflows create nothing. Each new
+project is saved under `writeRoot/<project-name>/` with its local index, jobs,
+frames, native revisions and exports. The CLI and builtin MCP share that setting.
+Changing `writeRoot` does not move or delete existing projects/caches. Projects
+from the earlier XDG default remain there; start a new test project after activation
+or explicitly select the old root to reopen one. Never move an `.fcproj` alone:
+it can reference derived audio by absolute path.
 
 The CLI is also usable with MCP disabled. Pi's builtin exposure schema is used;
 exposure does **not** defer server startup. Default settings add `+codemode` when
@@ -109,14 +119,16 @@ No live auth is inspected and no activation is authorized by these tests.
 `tests/craft-module-matrix.nix` accepts an `inputs` set (nixpkgs, home-manager,
 sops-nix, pi-nix, graphify-nix, artcraft-nix), `system` and optional case. Evaluate
 with the selected consumer dependencies and unpublished producer overrides. It
-contains13 exact-output individual cases,16 positive combinations and9 assertion
+contains13 exact-output individual cases,17 positive combinations and9 assertion
 negatives, including omitted/default exposure, package identity conflicts and
 normalized/server-builtin collisions. ARM/Darwin are evaluation-only; disabled/
 individual paths are safe, Darwin native video/MCP fails with a Linux assertion.
 
 `tests/activation_mcp_gate.py` executes only the generated sole-owner MCP snippets
 from the matrix inside a private namespace: Graphify/web-search/video/only-new/
-Pi-off transitions, unrelated opaque JSON, regular0644 permissions, actual Nix
+Pi-off transitions, generated video directory creation (dry-run, idempotence,
+custom quoted paths, existing mode/data preservation and MCP-off), unrelated opaque
+JSON, regular0644 permissions, actual Nix
 store-symlink migration, untouched synthetic auth/settings/keybindings/user data.
 It expects `/harness/module-contexts.json`, `/harness/paths.json`; bind them and
 store read-only with a fresh `/fixture` and cleared synthetic HOME. No full

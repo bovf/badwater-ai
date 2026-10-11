@@ -68,6 +68,13 @@
       imports = [workflow];
       badwater.ai.pi.videoEditing.mcp.enable = false;
     };
+    videoCustomDirectories = {
+      imports = [workflow];
+      badwater.ai.pi.videoEditing = {
+        readRoots = ["/fixture/home/Raw media; $(touch INJECTED)"];
+        writeRoot = "/fixture/home/Custom projects' directory";
+      };
+    };
     onlyCraftMcp = gridMcp;
     onlyNew = {
       badwater.ai.pi = {
@@ -233,6 +240,18 @@
       servers = c.badwater.ai.pi.mcpServers;
       mcp = c.home.activation.badwaterPiMcp.data;
       mcpContext = builtins.getContext c.home.activation.badwaterPiMcp.data;
+      videoDirectories = {
+        inherit (c.badwater.ai.pi.videoEditing) readRoots writeRoot;
+        script =
+          if c.home.activation ? badwaterVideoDirectories
+          then c.home.activation.badwaterVideoDirectories.data
+          else null;
+        context =
+          if c.home.activation ? badwaterVideoDirectories
+          then builtins.getContext c.home.activation.badwaterVideoDirectories.data
+          else {};
+        activationLibrary = "${inputs.home-manager}/lib/bash/home-manager.sh";
+      };
       settings =
         if c.badwater.ai.pi.enable
         then c.home.activation.badwaterPiSettings.data
