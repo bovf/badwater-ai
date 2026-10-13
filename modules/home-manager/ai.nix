@@ -39,6 +39,18 @@
     })
     cfg.pi.packages);
 
+  openaiContextWindows =
+    if cfg.pi.enable && cfg.pi.openai.maxContext && cfg.pi.package != null
+    then cfg.pi.package.openaiCodexContextWindows or {}
+    else {};
+  openaiContextOverrides = lib.mapAttrs (_: contextWindow: {inherit contextWindow;}) openaiContextWindows;
+  openaiContexts = lib.genAttrs ["openai" "openai-codex"] (_: {modelOverrides = openaiContextOverrides;});
+  openaiCompaction = builtins.listToAttrs (lib.concatMap (provider:
+    map (model: {
+      name = "${provider}/${model}";
+      value.reserveTokens = 150000;
+    }) (builtins.attrNames (lib.filterAttrs (_: window: window > 272000) openaiContextWindows))) ["openai" "openai-codex"]);
+
   piSettings = lib.filterAttrs (_: v: v != null) (
     {
       theme = cfg.pi.theme;
@@ -59,6 +71,9 @@
       defaultTools = ["+codemode"];
     }
     // cfg.pi.extraSettings
+    // lib.optionalAttrs cfg.pi.openai.maxContext {
+      compaction = lib.recursiveUpdate {modelOverrides = openaiCompaction;} (cfg.pi.extraSettings.compaction or {});
+    }
     // lib.optionalAttrs (builtins.any (pkg: pkg.name == "pi-archimedes") cfg.pi.packages) {
       # Older Archimedes registers /mcp lazily; 2.9 removes that component.
       # Retain the compatibility guard, preserving other plugin settings.
@@ -438,6 +453,23 @@ in {
     })
 
     {
+      # Restore only previously owned context fields when the option or Pi is disabled.
+      home.activation.badwaterPiOpenaiContext = config.lib.dag.entryAfter ["writeBoundary"] ''
+        if ${
+          if openaiContextWindows != {}
+          then "true"
+          else "false"
+        } || [ -e "$HOME/.pi/agent/badwater-openai-context-owned.json" ]; then
+          run ${pkgs.python3}/bin/python3 ${./pi-openai-context.py} \
+            ${pkgs.writeText "pi-openai-context.json" (builtins.toJSON (
+          if openaiContextWindows == {}
+          then {}
+          else openaiContexts
+        ))} \
+            "$HOME/.pi/agent/models.json" "$HOME/.pi/agent/badwater-openai-context-owned.json"
+        fi
+      '';
+
       # One owner also reconciles disablement, without touching credentials/media or unrelated servers.
       home.activation.badwaterPiMcp = config.lib.dag.entryAfter ["writeBoundary"] ''
         ${pkgs.python3}/bin/python3 ${./pi-mcp-merge.py} \
@@ -455,6 +487,10 @@ in {
 
     {
       assertions = [
+        {
+          assertion = !cfg.pi.enable || !cfg.pi.openai.maxContext || openaiContextWindows != {};
+          message = "badwater.ai.pi.openai.maxContext requires pi-nix's reviewed openaiCodexContextWindows package metadata.";
+        }
         {
           assertion = lib.intersectLists (builtins.attrNames builtinPiServers) (builtins.attrNames cfg.pi.mcpServers) == [];
           message = "Additional Pi MCP servers must not replace enabled managed Graphify/web-search identities.";

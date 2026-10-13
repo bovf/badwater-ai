@@ -31,6 +31,15 @@
     checks = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
+      pi-openai-context =
+        pkgs.runCommand "badwater-pi-openai-context-tests" {
+          nativeBuildInputs = [pkgs.python3];
+        } ''
+          export PYTHONDONTWRITEBYTECODE=1 HOME="$TMPDIR/home"
+          mkdir -p "$HOME"
+          python3 ${self}/tests/test_pi_openai_context.py
+          touch "$out"
+        '';
       pi-mcp-merge =
         pkgs.runCommand "badwater-pi-mcp-merge-tests" {
           nativeBuildInputs = [pkgs.python3];

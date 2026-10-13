@@ -105,6 +105,49 @@ connection timing. The additive default preserves Pi's normal tools; an explicit
 `extraSettings.defaultTools` still wins. Users intentionally disabling codemode
 should select Chrome's direct/lazy exposure. No browser is launched at startup.
 
+## OpenAI subscription maximum context
+
+```nix
+badwater.ai.pi = {
+  enable = true;
+  openai.maxContext = true; # default false
+  defaultProvider = "openai"; # existing ChatGPT sign-in; no auth migration
+  defaultModel = "gpt-6.1-sol";
+};
+```
+
+This consumes `pi-nix`'s `pi-coding-agent.openaiCodexContextWindows` metadata:
+all eight reviewed current subscription catalog models receive 1,050,000 context
+tokens under `openai` and legacy `openai-codex`; retired Spark keeps its 128k
+catalog declaration. Missing/retired models are not made available. Other
+provider/model metadata, classifier models and authentication remain unchanged.
+An older/custom Pi package without the metadata fails the module assertion.
+
+Activation after `writeBoundary` uses dry-run-aware `run` to merge only the
+owned `contextWindow` fields into regular writable `~/.pi/agent/models.json`.
+New files are private 0600; unrelated providers, model fields and credential
+values remain opaque/preserved and never enter the ownership manifest.
+Disablement restores the original owned context fields; it does not delete
+sessions or application data. Invalid JSON/schema, symlinks and hardlinks fail
+closed without replacing the files (JSON-with-comments must be repaired
+explicitly). Nothing reads or changes `auth.json`.
+
+Per-model compaction reserves 150,000 tokens for the eight 1.05M models, so the
+threshold is approximately 900,000; ordinary `keepRecentTokens`, compaction
+settings and other models retain their previous behavior. Explicit per-model
+`extraSettings.compaction.modelOverrides` take precedence. The option does not
+force model choices in agents/schedules; native Pi sessions/children load shared
+settings, while custom SDK runtimes and other CLI clients need their own policy.
+Restart existing Pi/child runners after activation; old summaries cannot be
+expanded back into original history. No automatic activation is provided.
+
+Limits are [reviewed in pi-nix](https://github.com/bovf/pi-nix/blob/main/docs/openai-context.md),
+not guessed for future models. Spark is retired; GPT-5.5 has announced October 14,
+2026 subscription retirement. This sets client metadata, not server entitlement,
+quota or media-sharing consent. A live long-context request remains a separately
+approved, allowance-consuming check. Test preservation/restore offline with
+`nix build .#checks.x86_64-linux.pi-openai-context --no-link`.
+
 ## Graphify integration
 
 ```nix

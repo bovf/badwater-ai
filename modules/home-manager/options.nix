@@ -81,6 +81,8 @@
         description = "settings.json defaultModel (provider-specific id).";
       };
 
+      openai.maxContext = lib.mkEnableOption "reviewed maximum context windows for OpenAI subscription chat models (requires pi-nix context metadata; does not grant server access)";
+
       extraSettings = lib.mkOption {
         type = lib.types.attrs;
         default = {};
