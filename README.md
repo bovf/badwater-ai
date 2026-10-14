@@ -10,9 +10,11 @@ pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
-`pi-nix` now consumes the official Pi 1.1.0 flake recipe with the consumer's
-followed nixpkgs. It retains the existing package registry and four SDK/Unix
-libraries in one host output; this module still owns policy, not a core build.
+`pi-nix` consumes the official Pi 1.2.0 stable-release recipe with the consumer's
+followed nixpkgs and retains supported Durable/Chord helpers in the same host.
+Upstream removed experimental server/client/protocol packages; with approval,
+supported native SDK/child lifecycle and bundled CLI RPC replace the retired
+Unix-handshake contract. This module still owns policy, not a core build.
 The integration test uses that core's Node 22 and hoisted coding-agent root
 (`lib/pi/node_modules/@earendil-works/pi-coding-agent`).
 
@@ -86,7 +88,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.1.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.2.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
