@@ -10,7 +10,7 @@ pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
-`pi-nix` consumes the official Pi 1.2.0 stable-release recipe with the consumer's
+`pi-nix` consumes the official Pi 1.3.0 stable-release recipe with the consumer's
 followed nixpkgs and retains supported Durable/Chord helpers in the same host.
 Upstream removed experimental server/client/protocol packages; with approval,
 supported native SDK/child lifecycle and bundled CLI RPC replace the retired
@@ -88,7 +88,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.2.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.3.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -227,7 +227,16 @@ Pi `1.0.0` sanitizes hyphens in tool names: the unchanged `web-search` server
 exports `mcp__web_search__web_search`. A successful local flake check alone is not
 evidence that those external packages work together.
 
-Dependency/contract audit (2026-10-08): the full updater rechecks the sole
+Current dependency/contract audit (2026-10-18): nixpkgs advances to
+`f20cd90e28fe0403873f473b29e42662cd86e8c4`; no policy defaults or credentials
+change. Pi1.3.0/Graphify0.9.92 build actual generated settings/keybindings,
+context/MCP ownership and three composed skill/reference trees in an isolated
+AI-only home. Native MCP initialize/list/graph_stats/get_node/empty-search and
+actual CLI startup pass in cwd and CLAUDE_PROJECT_DIR modes with zero stderr.
+Context/MCP helper checks pass. Configured video/new Craft binary integration
+and full consumer generations are deferred to the operator; no activation occurs.
+
+Historical dependency/contract audit (2026-10-08): the full updater rechecks the sole
 nixpkgs input; it remains at `7dd199b0e2993e37b4775ed66b1c291699608c9f`.
 There is no policy-source change. Pi 1.1.0/Graphify 0.9.80 integration must
 retain OpenAI/`gpt-5.6-sol`/dark, compaction 32000/60000, `ctrl+e`, stable
