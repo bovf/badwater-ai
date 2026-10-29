@@ -39,6 +39,13 @@ for (const result of [loader.getSkills(), loader.getPrompts(), loader.getThemes(
 }
 assert(loader.getSkills().skills.some(s => s.name === 'graphify'));
 assert(loader.getSkills().skills.some(s => s.name === 'web-search'));
+if (manifest.rea) {
+  const skill = loader.getSkills().skills.find(s => s.name === 'reverse-engineer-anything');
+  assert(skill, 'opted-in REA packaged skill must load');
+  const reaSkill = fs.readFileSync(skill.filePath, 'utf8');
+  assert(reaSkill.includes('Nix distribution: use the installed `rea` command'));
+  assert(reaSkill.includes('without separate explicit approval'));
+}
 const arch = loaded.extensions.find(e => e.path.includes('/pi-archimedes'));
 assert(arch);
 const starts = arch.handlers.get('session_start');
@@ -103,6 +110,15 @@ try {
   const graphifyNames = [...graphifySource.matchAll(/types\.Tool\(\s*name="([^"]+)"/g)].map(m => m[1]);
   assert.equal(graphifyNames.length, 10, 'current installed Graphify tool inventory');
   const expectedNames = [...graphifyNames.map(n => createMcpToolName('graphify', n)), 'mcp__web_search__web_search'];
+  if (manifest.rea) {
+    const catalog = JSON.parse(fs.readFileSync(`${manifest.rea.path}/lib/rea/dist/mcp-catalog.json`, 'utf8'));
+    assert.equal(catalog.tools.length, 229, 'current installed REA catalog is not backend availability');
+    expectedNames.push(...catalog.tools.map(t => createMcpToolName('rea', t.name)));
+    const configured = JSON.parse(fs.readFileSync(`${agentDir}/mcp.json`, 'utf8')).mcpServers.rea;
+    assert.equal(configured.command, `${manifest.rea.path}/bin/rea`);
+    assert.deepEqual(configured.args, ['mcp']);
+    console.log('PASS: actual builtin REA initialize/list, all 229 source-bound catalog names; no REA tool calls');
+  }
   assert.equal(names.length, new Set(names).size);
   assert.deepEqual(names.toSorted(), expectedNames.toSorted());
   assert(session.getActiveToolNames().includes('codemode'));

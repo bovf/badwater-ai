@@ -22,6 +22,21 @@ class MCPMerge(unittest.TestCase):
         self.target.parent.mkdir(); self.target.write_text(json.dumps(original)); auth = self.target.parent / 'auth.json'; auth.write_bytes(b'synthetic do not inspect'); before = auth.read_bytes()
         self.apply({'badwater-video': self.entry}); out = self.contents(); self.assertEqual(out['mcpServers']['user'], original['mcpServers']['user']); self.assertEqual(out['extensionMetadata'], original['extensionMetadata']); self.assertEqual(auth.read_bytes(), before); self.assertEqual(self.target.stat().st_mode & 0o777, 0o644); self.assertFalse(self.target.is_symlink())
         self.apply({}); self.assertEqual(self.contents(), original); self.assertEqual(auth.read_bytes(), before)
+    def test_rea_add_remove_is_idempotent_and_preserves_private_mode(self):
+        self.target.parent.mkdir(); original = {'mcpServers': {'graphify': {'command': '/synthetic/graphify'}, 'user': {'env': {'secret': 'synthetic-secret-only'}}}, 'preferences': {'keep': True}}
+        self.target.write_text(json.dumps(original)); self.target.chmod(0o600)
+        self.apply({'rea': self.entry}); first = self.target.read_bytes(); mtime = self.target.stat().st_mtime_ns; owner_mtime = self.owner.stat().st_mtime_ns
+        self.apply({'rea': self.entry}); self.assertEqual(self.target.read_bytes(), first); self.assertEqual(self.target.stat().st_mtime_ns, mtime); self.assertEqual(self.owner.stat().st_mtime_ns, owner_mtime)
+        self.assertEqual(self.target.stat().st_mode & 0o777, 0o600); self.assertNotIn('synthetic-secret-only', self.owner.read_text())
+        self.apply({}); self.assertEqual(self.contents(), original); self.assertEqual(self.target.stat().st_mode & 0o777, 0o600)
+
+    def test_invalid_inputs_do_not_disclose_opaque_values(self):
+        import subprocess
+        self.target.parent.mkdir(); self.target.write_text(json.dumps({'mcpServers': {'rea': {'command': '/synthetic/private', 'env': {'SECRET': 'synthetic-secret-only'}}}})); before = self.target.read_bytes()
+        declaration = self.root / 'declaration.json'; declaration.write_text(json.dumps({'mcpServers': {'rea': self.entry}}))
+        result = subprocess.run([os.sys.executable, str(Path(m.__file__)), str(declaration), str(self.target), str(self.owner)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1); self.assertEqual(result.stdout, ''); self.assertNotIn('synthetic-secret-only', result.stderr); self.assertNotIn('/synthetic/private', result.stderr); self.assertEqual(self.target.read_bytes(), before); self.assertFalse(self.owner.exists())
+
     def test_owned_replacement_keeps_optional_fields(self):
         self.apply({'new': self.entry}); d=self.contents(); d['mcpServers']['new']['localMetadata']={'keep':True}; self.target.write_text(json.dumps(d)); changed={**self.entry,'args':['new-arg']}; self.apply({'new':changed}); self.assertEqual(self.contents()['mcpServers']['new']['localMetadata'], {'keep':True}); self.assertEqual(self.contents()['mcpServers']['new']['args'], ['new-arg'])
     def test_conflicting_unmanaged_name_is_not_overwritten(self):
@@ -76,7 +91,7 @@ class MCPMerge(unittest.TestCase):
 
     def test_malformed_managed_and_legacy_declarations_preserve_files(self):
         self.target.parent.mkdir(); self.target.write_text('{}')
-        declarations = [[], {'mcpServers': []}, {'mcpServers': {'new': []}}, {'mcpServers': {'new': {}}}, {'mcpServers': {'new': {**self.entry, 'args': 'mcp'}}}, {'mcpServers': {}, 'legacyServers': []}, {'mcpServers': {}, 'legacyServers': {'old': {'command': 1}}}]
+        declarations = [[], {'mcpServers': []}, {'mcpServers': {'new': []}}, {'mcpServers': {'new': {}}}, {'mcpServers': {'new': {**self.entry, 'args': 'mcp'}}}, {'mcpServers': {'new': {**self.entry, 'args': [1]}}}, {'mcpServers': {'new': {**self.entry, 'exposure': 'unknown'}}}, {'mcpServers': {'bad.name': self.entry}}, {'mcpServers': {}, 'legacyServers': []}, {'mcpServers': {}, 'legacyServers': {'old': {'command': 1}}}]
         for declaration in declarations:
             with self.assertRaises(ValueError): m.merge(declaration, self.target, self.owner)
             self.assertEqual(self.target.read_text(), '{}'); self.assertFalse(self.owner.exists())

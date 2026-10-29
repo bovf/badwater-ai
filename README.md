@@ -6,11 +6,11 @@ This flake owns integration policy only. It does **not** package Pi or graphify.
 Consumers provide packages through nixpkgs overlays, usually from:
 
 ```text
-pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages
+pi-nix       -> pi-coding-agent, pi-vim, pi-search, Pi packages, optional REA
 graphify-nix -> graphifyy + local .nix extractor
 ```
 
-`pi-nix` consumes the official Pi 1.3.0 stable-release recipe with the consumer's
+`pi-nix` consumes the official Pi 1.4.0 stable-release recipe with the consumer's
 followed nixpkgs and retains supported Durable/Chord helpers in the same host.
 Upstream removed experimental server/client/protocol packages; with approval,
 supported native SDK/child lifecycle and bundled CLI RPC replace the retired
@@ -88,7 +88,7 @@ guidance, not a Git hook enforcing commit contents.
 Settings and keybindings are writable copies re-applied on each Home Manager
 switch; runtime edits can be overwritten. The external-editor binding remains
 `ctrl+e`; enabling pi-vim reserves Escape for normal mode and uses `ctrl+c` to
-interrupt. Pi `1.3.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
+interrupt. Pi `1.4.0`'s CLI loads `~/.pi/agent/mcp.json` through its built-in
 MCP extension; SDK sessions must explicitly load the built-in extensions.
 When the stable `pi-archimedes` package is selected, generated settings force
 `"archimedes.mcp": { "enabled": false }`, preserving other keys in that
@@ -119,9 +119,10 @@ badwater.ai.pi = {
 ```
 
 This consumes `pi-nix`'s `pi-coding-agent.openaiCodexContextWindows` metadata:
-all eight reviewed current subscription catalog models receive 1,050,000 context
-tokens under `openai` and legacy `openai-codex`; retired Spark keeps its 128k
-catalog declaration. Missing/retired models are not made available. Other
+the eight reviewed high-context metadata entries retain 1,050,000 context tokens
+under `openai` and legacy `openai-codex`; retired Spark keeps its 128k declaration.
+The stable Pi1.4 subscription catalog no longer lists Spark or GPT-5.5: unchanged
+metadata does not resurrect missing/retired models or change catalog availability. Other
 provider/model metadata, classifier models and authentication remain unchanged.
 An older/custom Pi package without the metadata fails the module assertion.
 
@@ -149,6 +150,61 @@ not guessed for future models. Spark is retired; GPT-5.5 has announced October 1
 quota or media-sharing consent. A live long-context request remains a separately
 approved, allowance-consuming check. Test preservation/restore offline with
 `nix build .#checks.x86_64-linux.pi-openai-context --no-link`.
+
+## REA integration (default off)
+
+```nix
+badwater.ai = {
+  rea.enable = true; # CLI, supplied by pi-nix's overlays.default or overlays.rea
+  pi = {
+    enable = true;
+    rea.enable = true; # packaged reverse-engineer-anything skill
+    rea.mcp.enable = true; # stdio via the existing builtin MCP owner
+    # rea.mcp.exposure = "codemode"; # default; deferred/direct/hidden also supported
+  };
+};
+```
+
+All three enables default to false; this reusable policy selects no users or
+hosts. Consumer configuration owns Heavy/Spy-only opt-ins. CLI-only installation
+is supported without Pi; either Pi integration requires both Pi and REA enabled.
+Opt-in is supported only on **x86_64-linux** and otherwise fails a clear assertion.
+Disabled REA does not evaluate the unsupported producer package. A package override
+must retain pi-nix's reviewed `mcpArgs = ["mcp"]` and `skillRelativePath` metadata.
+
+Nix owns the executable, runtime backends, skill and registration: the skill is
+linked from `share/rea/skills/reverse-engineer-anything`, and MCP uses the immutable
+store command `.../bin/rea` with packaged arguments `["mcp"]`. Never run `rea setup`,
+update/uninstall, npx, global npm installation, or runtime backend acquisition.
+REA adds no service, activation writer, permission/capture group, ptrace/sysctl or
+udev change. Only `badwaterPiMcp`, after `writeBoundary`, reconciles its declaration
+through Home Manager's dry-run-aware `run` helper. Existing opaque MCP servers and
+optional metadata remain; conflicting unmanaged names fail closed. Disabling REA
+removes only its owned registration, not user projects/caches/preferences/auth.
+Existing regular MCP private modes are preserved, ownership manifests default to
+0600, and new MCP files/store-symlink migrations retain the existing 0644 default.
+Do not put credentials in Nix-store declarations. Invalid schemas/arguments,
+non-store symlinks and hardlinks fail without replacing the original files.
+
+REA 6.8.0 advertises **229 MCP tools / 6 prompts**, not 229 installed backends.
+The reviewed bundle includes Ghidra/JDK21, Rizin, GNU binutils, process utilities,
+native PTY support and built-in static artifact/JavaScript/Electron/.NET parsers.
+Frida, Android/JADX/Apktool/adb, firmware Binwalk/Unblob, browser, capture/signal,
+pwntools/pwndbg/GDB and proprietary Hopper/IDA/Kuna/JEB backends are omitted;
+no credentials, proprietary licenses or backend downloads are supplied. Compact
+input schemas and full output schemas are upstream defaults. Large catalogs use
+Pi codemode by default; an explicit `defaultTools` excluding codemode requires a
+different exposure or an explicit `+codemode` choice, never a silent override.
+
+**Installation/discovery is not consent and REA is not a sandbox.** Before real
+tool calls, obtain task-specific approval for the target and operations. Do not
+execute/attach real processes, access devices/credentials, capture traffic, launch
+browsers, contact providers or remote targets, relax permissions, or share local
+artifact/tool output with a model without explicit authorization. Static output
+can itself contain private/proprietary content. A catalog entry or an installed
+capture-capable utility grants no permission to use it. Offline synthetic
+initialize/list/startup checks establish neither live-target safety nor omitted
+backend availability.
 
 ## Graphify integration
 
@@ -197,8 +253,21 @@ nix shell --inputs-from . nixpkgs#python3 --command python3 tests/test_graphify_
 # run the core's Node 22 in that generated HOME
 # under env -i PI_OFFLINE=1 in a private filesystem AND network namespace,
 # exposing only /nix/store, the tests and that fixture, never live settings.
+# tests/test_pi_cli_mcp.mjs <manifest> additionally waits for the actual bundled
+# CLI to discover the combined generated Graphify/search/REA inventory over RPC,
+# preserving settings/keybindings/models/MCP bytes (no prompts or REA tool calls).
+# Optional manifest.rea.path in test_pi_mcp.mjs checks the REA skill and all229 installed
+# catalog names too, without making REA tool calls.
 # Also run pi-nix/tests/bundled-cli.mjs <pi-output> --existing-settings in
 # the fixture HOME/cwd: it retains generated policy and temporarily adds a probe.
+# REA matrix (tests/rea-module-matrix.nix) accepts caller-owned temporary inputs:
+# nixpkgs, home-manager, pi-nix and graphify-nix. Evaluate x86_64-linux,
+# aarch64-linux and aarch64-darwin to JSON, then:
+python3 tests/test_rea_policy.py native.json arm-linux.json arm-darwin.json
+# In the same private namespace only: tests/rea_activation_gate.py native.json
+# tools.json tests generated sole-owner snippets with HM's real run helper,
+# dry-run, enable/disable/Pi-off, private modes, conflicts and synthetic opacity.
+# Build only generated files/skills/snippet dependencies, never a home generation.
 nix develop            # installs staged-file Alejandra pre-commit hook
 ```
 
@@ -227,7 +296,16 @@ Pi `1.0.0` sanitizes hyphens in tool names: the unchanged `web-search` server
 exports `mcp__web_search__web_search`. A successful local flake check alone is not
 evidence that those external packages work together.
 
-Current dependency/contract audit (2026-10-18): nixpkgs advances to
+Current dependency/contract audit (2026-10-29): the supported ALL updater advances
+sole nixpkgs input `f20cd90e28fe0403873f473b29e42662cd86e8c4` to
+`e62746b0b472753ef019baceab6f1e2e52014980`. There are no other owned package pins.
+REA policy remains default-off; existing model, context, media and package
+selections are not changed. Generated-resource/runtime acceptance is against
+fresh local Pi1.4.0/Archimedes2.12.0, Graphify0.9.97 and REA6.8.0 candidates;
+published consumer refs/follows and host opt-ins remain the parent's separate
+gate. No activation or full home/system/Craft generation build is implied.
+
+Historical dependency/contract audit (2026-10-18): nixpkgs advances to
 `f20cd90e28fe0403873f473b29e42662cd86e8c4`; no policy defaults or credentials
 change. Pi1.3.0/Graphify0.9.92 build actual generated settings/keybindings,
 context/MCP ownership and three composed skill/reference trees in an isolated

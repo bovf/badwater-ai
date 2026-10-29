@@ -309,6 +309,7 @@
 in {
   imports = [
     ./options.nix
+    ./rea.nix
     ./artcraft.nix
     ./video-editing.nix
   ];
@@ -472,7 +473,7 @@ in {
 
       # One owner also reconciles disablement, without touching credentials/media or unrelated servers.
       home.activation.badwaterPiMcp = config.lib.dag.entryAfter ["writeBoundary"] ''
-        ${pkgs.python3}/bin/python3 ${./pi-mcp-merge.py} \
+        run ${pkgs.python3}/bin/python3 ${./pi-mcp-merge.py} \
           ${pkgs.writeText "pi-mcp.json" (builtins.toJSON piMcpServers)} \
           "$HOME/.pi/agent/mcp.json" "$HOME/.pi/agent/badwater-mcp-owned.json"
       '';
@@ -504,7 +505,7 @@ in {
           message = "Pi MCP server names must be valid and unique after builtin '-'/'_' normalization.";
         }
         {
-          assertion = lib.all (s: builtins.isString (s.command or null) && lib.hasPrefix "/" s.command && builtins.isList (s.args or []) && builtins.elem (s.exposure or "deferred") ["codemode" "deferred" "direct" "hidden"]) (builtins.attrValues cfg.pi.mcpServers);
+          assertion = lib.all (s: builtins.isString (s.command or null) && lib.hasPrefix "/" s.command && builtins.isList (s.args or []) && lib.all builtins.isString (s.args or []) && builtins.elem (s.exposure or "deferred") ["codemode" "deferred" "direct" "hidden"]) (builtins.attrValues cfg.pi.mcpServers);
           message = "Additional Pi MCP servers require absolute stdio commands, argument lists and supported builtin exposure.";
         }
         {

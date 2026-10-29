@@ -1,6 +1,7 @@
 """Single MCP configuration owner; preserve opaque unrelated fields, remove only owned names."""
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -46,7 +47,7 @@ def merge(declaration, target, manifest):
     if not isinstance(declaration, dict) or not isinstance(declaration.get('mcpServers'), dict):
         raise ValueError('unsupported managed MCP declaration schema; original file preserved')
     desired = declaration['mcpServers']
-    if not all(isinstance(name, str) and isinstance(entry, dict) for name, entry in desired.items()):
+    if not all(isinstance(name, str) and re.fullmatch(r'[A-Za-z0-9_-]+', name) and isinstance(entry, dict) for name, entry in desired.items()):
         raise ValueError('managed MCP servers must be named objects; original file preserved')
     legacy = declaration.get('legacyServers', {})
     if not isinstance(legacy, dict) or not all(isinstance(name, str) and isinstance(entry, dict) for name, entry in legacy.items()):
@@ -54,6 +55,8 @@ def merge(declaration, target, manifest):
     for entry in [*desired.values(), *legacy.values()]:
         if not isinstance(entry.get('command'), str) or not entry['command'].startswith('/') or not isinstance(entry.get('args', []), list) or not all(isinstance(arg, str) for arg in entry.get('args', [])):
             raise ValueError('managed MCP command/args schema is invalid; original file preserved')
+        if entry.get('exposure', 'deferred') not in ('codemode', 'deferred', 'direct', 'hidden'):
+            raise ValueError('managed MCP exposure is invalid; original file preserved')
     servers = dict(current.get('mcpServers', {}))
     owned = set(owner['servers'])
     # Adopt only an exact old managed command/args pair, retaining opacity of unrelated entries.
@@ -78,15 +81,18 @@ def merge(declaration, target, manifest):
             raise ValueError('requested managed MCP name conflicts with an unrelated server; rename or remove that declaration explicitly')
         servers[name] = {**(old if isinstance(old, dict) else {}), **entry}
     updated = {**current, 'mcpServers': servers}
+    # Keep private modes on existing regular files; store-symlink migrations use the default.
+    target_mode = target.stat().st_mode & 0o777 if target.exists() and not target.is_symlink() else 0o644
+    owner_mode = manifest.stat().st_mode & 0o777 if manifest.exists() and not manifest.is_symlink() else 0o600
     # Crash-safe ownership: retain both old/new names until the MCP replacement succeeds.
     pending = {'version': 1, 'servers': sorted(owned | desired.keys())}
     if pending != owner or not manifest.exists() or manifest.is_symlink():
-        atomic(manifest, pending, 0o600)
-    if updated != current or target.is_symlink() or not target.exists() or (target.stat().st_mode & 0o777) != 0o644:
-        atomic(target, updated, 0o644)
+        atomic(manifest, pending, owner_mode)
+    if updated != current or target.is_symlink() or not target.exists():
+        atomic(target, updated, target_mode)
     next_owner = {'version': 1, 'servers': sorted(desired)}
     if next_owner != pending:
-        atomic(manifest, next_owner, 0o600)
+        atomic(manifest, next_owner, owner_mode)
 
 
 if __name__ == '__main__':
