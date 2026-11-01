@@ -71,15 +71,15 @@
       defaultTools = ["+codemode"];
     }
     // cfg.pi.extraSettings
-    // lib.optionalAttrs cfg.pi.swarm.enable {
+    // lib.optionalAttrs cfg.pi.seniorSwarm.enable {
       # Explicit settings (including role models/browserCommand) win recursively.
-      badwaterSwarm = lib.recursiveUpdate {
-        inherit (cfg.pi.swarm) maxConcurrent maxAgents maxRepairCycles roleModels;
+      badwaterSeniorSwarm = lib.recursiveUpdate {
+        inherit (cfg.pi.seniorSwarm) maxConcurrent maxAgents maxRepairCycles roleModels;
         browserCommand =
-          if cfg.pi.swarm.browser.enable && cfg.pi.swarm.browser.package != null
-          then "${cfg.pi.swarm.browser.package}/bin/swarm-browser"
+          if cfg.pi.seniorSwarm.browser.enable && cfg.pi.seniorSwarm.browser.package != null
+          then "${cfg.pi.seniorSwarm.browser.package}/bin/badwater-senior-swarm-browser"
           else null;
-      } (cfg.pi.extraSettings.badwaterSwarm or {});
+      } (cfg.pi.extraSettings.badwaterSeniorSwarm or {});
     }
     // lib.optionalAttrs cfg.pi.openai.maxContext {
       compaction = lib.recursiveUpdate {modelOverrides = openaiCompaction;} (cfg.pi.extraSettings.compaction or {});
@@ -320,7 +320,7 @@ in {
   imports = [
     ./options.nix
     ./rea.nix
-    ./swarm.nix
+    ./badwater-senior-swarm.nix
     ./artcraft.nix
     ./video-editing.nix
   ];

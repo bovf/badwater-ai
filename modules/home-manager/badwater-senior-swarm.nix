@@ -5,19 +5,19 @@
   ...
 }: let
   cfg = config.badwater.ai.pi;
-  swarm = cfg.swarm;
+  seniorSwarm = cfg.seniorSwarm;
   linux = pkgs.stdenv.hostPlatform.isLinux;
   subagents = pkgs.piPackages.pi-subagents or null;
 in {
-  options.badwater.ai.pi.swarm = {
-    enable = lib.mkEnableOption "the approval-gated Badwater swarm package (does not authorize model, browser or network calls)";
+  options.badwater.ai.pi.seniorSwarm = {
+    enable = lib.mkEnableOption "the approval-gated Badwater Senior Swarm package (does not authorize model, browser or network calls)";
     package = lib.mkOption {
       type = lib.types.nullOr lib.types.package;
       default =
-        if swarm.enable
-        then pkgs.badwater-swarm or null
+        if seniorSwarm.enable
+        then pkgs.badwater-senior-swarm or null
         else null;
-      description = "Nix-owned badwater-swarm Pi package; no runtime installer or private Pi/subagent copy.";
+      description = "Nix-owned badwater-senior-swarm Pi package; no runtime installer or private Pi/subagent copy.";
     };
     maxConcurrent = lib.mkOption {
       type = lib.types.ints.between 1 6;
@@ -48,15 +48,15 @@ in {
       package = lib.mkOption {
         type = lib.types.nullOr lib.types.package;
         default =
-          if swarm.enable && swarm.browser.enable && linux
-          then pkgs.badwater-swarm-browser or null
+          if seniorSwarm.enable && seniorSwarm.browser.enable && linux
+          then pkgs.badwater-senior-swarm-browser or null
           else null;
-        description = "Nix-owned package supplying bin/swarm-browser, currently Linux only.";
+        description = "Nix-owned package supplying bin/badwater-senior-swarm-browser, currently Linux only.";
       };
     };
     context7.enable = lib.mkOption {
       type = lib.types.bool;
-      default = swarm.enable;
+      default = seniorSwarm.enable;
       description = "Declare Context7 HTTPS/codemode through the sole builtin MCP owner. OAuth is runtime-only; no credentials enter the store and no connection is made by activation.";
     };
   };
@@ -64,39 +64,39 @@ in {
     {
       assertions = [
         {
-          assertion = !swarm.enable || cfg.enable;
-          message = "badwater.ai.pi.swarm.enable requires badwater.ai.pi.enable.";
+          assertion = !seniorSwarm.enable || cfg.enable;
+          message = "badwater.ai.pi.seniorSwarm.enable requires badwater.ai.pi.enable.";
         }
         {
-          assertion = !swarm.enable || swarm.package != null;
-          message = "badwater.ai.pi.swarm.enable requires pkgs.badwater-swarm or an explicit swarm.package.";
+          assertion = !seniorSwarm.enable || seniorSwarm.package != null;
+          message = "badwater.ai.pi.seniorSwarm.enable requires pkgs.badwater-senior-swarm or an explicit seniorSwarm.package.";
         }
         {
-          assertion = !swarm.enable || builtins.any (p: p.name == "pi-subagents") cfg.packages;
-          message = "badwater.ai.pi.swarm.enable requires a selected pi-subagents package.";
+          assertion = !seniorSwarm.enable || builtins.any (p: p.name == "pi-subagents") cfg.packages;
+          message = "badwater.ai.pi.seniorSwarm.enable requires a selected pi-subagents package.";
         }
         {
-          assertion = !(swarm.enable && swarm.browser.enable) || (linux && swarm.browser.package != null);
-          message = "Swarm browser integration requires Linux and pkgs.badwater-swarm-browser or an explicit browser.package; disable browser on other platforms.";
+          assertion = !(seniorSwarm.enable && seniorSwarm.browser.enable) || (linux && seniorSwarm.browser.package != null);
+          message = "Swarm browser integration requires Linux and pkgs.badwater-senior-swarm-browser or an explicit browser.package; disable browser on other platforms.";
         }
         {
-          assertion = !swarm.context7.enable || cfg.enable;
+          assertion = !seniorSwarm.context7.enable || cfg.enable;
           message = "Swarm Context7 integration requires badwater.ai.pi.enable.";
         }
       ];
     }
-    (lib.mkIf swarm.enable {
+    (lib.mkIf seniorSwarm.enable {
       # Keep the consumer's existing extension load order; dedup its subagent first.
       badwater.ai.pi.packages = lib.mkAfter (
-        lib.optional (swarm.package != null) {
-          name = "badwater-swarm";
-          package = swarm.package;
+        lib.optional (seniorSwarm.package != null) {
+          name = "badwater-senior-swarm";
+          package = seniorSwarm.package;
         }
         ++ lib.optional (subagents != null) subagents
       );
-      home.packages = lib.optional (swarm.browser.enable && linux && swarm.browser.package != null) swarm.browser.package;
+      home.packages = lib.optional (seniorSwarm.browser.enable && linux && seniorSwarm.browser.package != null) seniorSwarm.browser.package;
     })
-    (lib.mkIf swarm.context7.enable {
+    (lib.mkIf seniorSwarm.context7.enable {
       badwater.ai.pi.mcpServers.context7 = {
         url = "https://mcp.context7.com/mcp";
         exposure = "codemode";

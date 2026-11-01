@@ -1,4 +1,4 @@
-# Swarm Home Manager policy and HTTP MCP
+# Badwater Senior Swarm Home Manager policy and HTTP MCP
 
 This module owns integration policy, not the swarm runtime/package. It does not
 activate a home, start a swarm/browser, authenticate Context7, or authorize model,
@@ -7,31 +7,31 @@ network, target inspection or deployment operations.
 ```nix
 badwater.ai.pi = {
   enable = true;
-  swarm = {
+  seniorSwarm = {
     enable = true; # default false
-    # package = pkgs.badwater-swarm;
+    # package = pkgs.badwater-senior-swarm;
     maxConcurrent = 6; # 1..6
     maxAgents = 32; # logical admissions, 1..64
     maxRepairCycles = 2; # 0..2
     roleModels = {}; # absent roles inherit the parent's provider/model
-    # roleModels."swarm.qa" = "<explicit provider/model>";
+    # roleModels."badwater-senior-swarm.qa" = "<explicit provider/model>";
     browser.enable = pkgs.stdenv.hostPlatform.isLinux; # default
-    # browser.package = pkgs.badwater-swarm-browser;
-    context7.enable = true; # defaults to swarm.enable
+    # browser.package = pkgs.badwater-senior-swarm-browser;
+    context7.enable = true; # defaults to seniorSwarm.enable
   };
 };
 ```
 
-The producer `pi-nix` supplies `pkgs.badwater-swarm`,
-`pkgs.piPackages.badwater-swarm = { name = "badwater-swarm"; package = pkgs.badwater-swarm; }`,
-and `packages.<system>.badwater-swarm`. The package root supplies `package.json`,
+The producer `pi-nix` supplies `pkgs.badwater-senior-swarm`,
+`pkgs.piPackages.badwater-senior-swarm = { name = "badwater-senior-swarm"; package = pkgs.badwater-senior-swarm; }`,
+and `packages.<system>.badwater-senior-swarm`. The package root supplies `package.json`,
 `extension.mjs`, `lib.mjs`, `cli.mjs`, `workflows/`, `agents/` and
-`skills/swarm/SKILL.md`; the manifest registers the extension, skill and
+`skills/badwater-senior-swarm/SKILL.md`; the manifest registers the extension, skill and
 `pi-subagents.agents`. Actual Pi and pi-subagents come from host outputs, not
 private npm copies, global bootstrap, or runtime installers. No additional
 passthru metadata is required by this module.
 
-Enabling selects `badwater-swarm` and the producer's existing
+Enabling selects `badwater-senior-swarm` and the producer's existing
 `pkgs.piPackages.pi-subagents` through `badwater.ai.pi.packages`. Existing equal
 name/output selections deduplicate. Auto-added packages use `mkAfter`, preserving
 the consumer's existing order and first selected subagent output. Different
@@ -42,17 +42,26 @@ not force the swarm, subagents or browser packages. No global subagent settings,
 user agent files or default provider/model are taken over.
 
 Linux browser integration requires the Nix browser package supplying
-`bin/swarm-browser`, installed in `home.packages`. Other platforms default to
+`bin/badwater-senior-swarm-browser`, installed in `home.packages`. Other platforms default to
 browser disabled and reject an explicit browser enable. Runtime settings get an
 absolute store browser command when enabled, otherwise `null`. This is not
 permission to launch Chromium, contact a site, or access a real browser profile.
 
+## Full naming upgrade
+
+Use `badwater.ai.pi.seniorSwarm` and `extraSettings.badwaterSeniorSwarm`, including
+`badwater-senior-swarm.<role>` model-map keys. The previous option/package names
+are not aliases. The target consumer homes and their package links are updated
+together; rebuild and restart Pi before using the new skill. Old runtime
+artifacts/worktrees remain untouched, but old approval authority is not migrated.
+Models/providers, unrelated package order and the sole MCP owner stay unchanged.
+
 ## Settings precedence
 
-Generated settings include `badwaterSwarm = { maxConcurrent = 6; maxAgents = 32;
+Generated settings include `badwaterSeniorSwarm = { maxConcurrent = 6; maxAgents = 32;
 maxRepairCycles = 2; roleModels = {}; browserCommand = <absolute path or null>; }`.
-The typed `swarm.*` options supply these defaults. Explicit
-`extraSettings.badwaterSwarm` is recursively merged **over** them, including
+The typed `badwater.ai.pi.seniorSwarm.*` options supply these defaults. Explicit
+`extraSettings.badwaterSeniorSwarm` is recursively merged **over** them, including
 per-role model selections, opaque unrelated keys, and an explicit
 `browserCommand` (including null). Other existing `extraSettings`, model/provider,
 compaction/context and package selections keep their existing precedence.
@@ -61,11 +70,11 @@ Use the typed options for checked bounds. The escape hatch does not silently
 reset explicit settings: the runtime must validate effective bounds/paths and
 fail closed for invalid overrides. Settings are the existing writable copies
 re-applied on Home Manager switch; runtime changes can be overwritten. No new
-settings or activation writer is added by swarm.
+settings or activation writer is added by Badwater Senior Swarm.
 
 ## Context7 and managed HTTP schema
 
-`swarm.context7.enable` declares exactly:
+`badwater.ai.pi.seniorSwarm.context7.enable` declares exactly:
 
 ```nix
 badwater.ai.pi.mcpServers.context7 = {
@@ -139,24 +148,24 @@ export NIX_CONFIG="${NIX_CONFIG-}"$'\nmax-jobs = 1\ncores = 3'
 python3 tests/test_pi_mcp_merge.py
 python3 tests/test_pi_openai_context.py
 # Repeat evaluation for x86_64-linux, aarch64-linux and aarch64-darwin:
-nix eval --impure --json --expr "(import ./tests/swarm-module-matrix.nix {
+nix eval --impure --json --expr "(import ./tests/badwater-senior-swarm-module-matrix.nix {
   inputs = { nixpkgs = builtins.toPath \"$NIXPKGS\";
              home-manager = builtins.toPath \"$HOME_MANAGER\"; };
   system = \"x86_64-linux\";
-}).matrix" > /tmp/swarm-native.json
+}).matrix" > /tmp/badwater-senior-swarm-native.json
 # Realize native generated JSON/helper inputs only:
-nix build --impure --no-link --expr "(import ./tests/swarm-module-matrix.nix {
+nix build --impure --no-link --expr "(import ./tests/badwater-senior-swarm-module-matrix.nix {
   inputs = { nixpkgs = builtins.toPath \"$NIXPKGS\";
              home-manager = builtins.toPath \"$HOME_MANAGER\"; };
 }).sources"
-python3 tests/test_swarm_policy.py --resources /tmp/swarm-native.json \
-  /tmp/swarm-arm-linux.json /tmp/swarm-darwin.json
+python3 tests/test_badwater_senior_swarm_policy.py --resources /tmp/badwater-senior-swarm-native.json \
+  /tmp/badwater-senior-swarm-arm-linux.json /tmp/badwater-senior-swarm-darwin.json
 ```
 
 Both inputs may be source paths (or cached flake inputs). The matrix deliberately
 does not add a Home Manager input to this flake.
 
-Execute `tests/swarm_activation_gate.py <native-matrix.json> <store-bash-output>`
+Execute `tests/badwater_senior_swarm_activation_gate.py <native-matrix.json> <store-bash-output>`
 only inside a fresh private filesystem **and** network namespace, with cleared
 environment, `HOME=/tmp/policy-home`, read-only `/nix/store`, tests and matrix
 exposed, and no host sockets/home. It exercises actual generated MCP snippets

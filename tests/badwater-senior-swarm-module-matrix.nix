@@ -9,8 +9,8 @@
     package = name: final.runCommand name {} ''mkdir -p "$out"'';
   in {
     pi-coding-agent = (package "pi-fixture").overrideAttrs (_: {passthru.openaiCodexContextWindows."gpt-6.1-sol" = 1050000;});
-    badwater-swarm = package "badwater-swarm-fixture";
-    badwater-swarm-browser = package "badwater-swarm-browser-fixture";
+    badwater-senior-swarm = package "badwater-senior-swarm-fixture";
+    badwater-senior-swarm-browser = package "badwater-senior-swarm-browser-fixture";
     piPackages.pi-subagents = {
       name = "pi-subagents";
       package = package "pi-subagents-fixture";
@@ -32,7 +32,7 @@
   enabled = {
     badwater.ai.pi = {
       enable = true;
-      swarm.enable = true;
+      seniorSwarm.enable = true;
     };
   };
   baseline = {
@@ -67,8 +67,8 @@
     disabledPoison = {
       nixpkgs.overlays = lib.mkAfter [
         (_: _: {
-          badwater-swarm = throw "disabled swarm forced";
-          badwater-swarm-browser = throw "disabled browser forced";
+          badwater-senior-swarm = throw "disabled swarm forced";
+          badwater-senior-swarm-browser = throw "disabled browser forced";
           piPackages = throw "disabled subagents forced";
         })
       ];
@@ -79,8 +79,8 @@
       badwater.ai.pi.packages = [
         pkgs.piPackages.pi-subagents
         {
-          name = "badwater-swarm";
-          package = pkgs.badwater-swarm;
+          name = "badwater-senior-swarm";
+          package = pkgs.badwater-senior-swarm;
         }
       ];
     };
@@ -88,7 +88,7 @@
       imports = [enabled];
       badwater.ai.pi.packages = [
         {
-          name = "badwater-swarm";
+          name = "badwater-senior-swarm";
           package = pkgs.pi-search;
         }
       ];
@@ -100,12 +100,12 @@
       badwater.ai.pi = {
         defaultProvider = "anthropic";
         defaultModel = "explicit-parent";
-        swarm.roleModels."swarm.qa" = "qa-option";
+        seniorSwarm.roleModels."badwater-senior-swarm.qa" = "qa-option";
         extraSettings = {
           defaultModel = "settings-parent";
-          badwaterSwarm = {
+          badwaterSeniorSwarm = {
             maxAgents = 7;
-            roleModels."swarm.developer" = "developer-explicit";
+            roleModels."badwater-senior-swarm.developer" = "developer-explicit";
             browserCommand = "/fixture/custom-browser";
             opaque = {keep = true;};
           };
@@ -114,27 +114,27 @@
     };
     browserOff = {
       imports = [enabled];
-      badwater.ai.pi.swarm.browser.enable = false;
+      badwater.ai.pi.seniorSwarm.browser.enable = false;
     };
     contextOff = {
       imports = [enabled];
-      badwater.ai.pi.swarm.context7.enable = false;
+      badwater.ai.pi.seniorSwarm.context7.enable = false;
     };
     contextOnly = {
       badwater.ai.pi = {
         enable = true;
-        swarm.context7.enable = true;
+        seniorSwarm.context7.enable = true;
       };
     };
-    contextOnlyPiOff = {badwater.ai.pi.swarm.context7.enable = true;};
-    swarmPiOff = {
+    contextOnlyPiOff = {badwater.ai.pi.seniorSwarm.context7.enable = true;};
+    seniorSwarmPiOff = {
       imports = [enabled];
       badwater.ai.pi.enable = lib.mkForce false;
     };
     piOff = {badwater.ai.pi.enable = false;};
     missingPackage = {
       imports = [enabled];
-      badwater.ai.pi.swarm.package = null;
+      badwater.ai.pi.seniorSwarm.package = null;
     };
     missingSubagents = {
       imports = [enabled];
@@ -147,42 +147,42 @@
     };
     missingBrowser = {
       imports = [enabled];
-      badwater.ai.pi.swarm.browser = {
+      badwater.ai.pi.seniorSwarm.browser = {
         enable = true;
         package = null;
       };
     };
     browserOn = {
       imports = [enabled];
-      badwater.ai.pi.swarm.browser.enable = true;
+      badwater.ai.pi.seniorSwarm.browser.enable = true;
     };
     concurrentLow = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxConcurrent = 0;
+      badwater.ai.pi.seniorSwarm.maxConcurrent = 0;
     };
     concurrentHigh = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxConcurrent = 7;
+      badwater.ai.pi.seniorSwarm.maxConcurrent = 7;
     };
     agentsLow = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxAgents = 0;
+      badwater.ai.pi.seniorSwarm.maxAgents = 0;
     };
     agentsHigh = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxAgents = 65;
+      badwater.ai.pi.seniorSwarm.maxAgents = 65;
     };
     repairsLow = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxRepairCycles = -1;
+      badwater.ai.pi.seniorSwarm.maxRepairCycles = -1;
     };
     repairsHigh = {
       imports = [enabled];
-      badwater.ai.pi.swarm.maxRepairCycles = 3;
+      badwater.ai.pi.seniorSwarm.maxRepairCycles = 3;
     };
     bounds = {
       imports = [enabled];
-      badwater.ai.pi.swarm = {
+      badwater.ai.pi.seniorSwarm = {
         maxConcurrent = 1;
         maxAgents = 64;
         maxRepairCycles = 0;
@@ -244,7 +244,7 @@
   summarize = extra: let
     c = (evaluate extra).config;
     typed = builtins.tryEval (builtins.deepSeq {
-        inherit (c.badwater.ai.pi.swarm) maxConcurrent maxAgents maxRepairCycles;
+        inherit (c.badwater.ai.pi.seniorSwarm) maxConcurrent maxAgents maxRepairCycles;
         selected = map (p: toString p.package) c.badwater.ai.pi.packages;
       }
       true);
@@ -256,8 +256,8 @@
     then {inherit failed;}
     else {
       inherit failed;
-      swarmEnabled = c.badwater.ai.pi.swarm.enable;
-      browserEnabled = c.badwater.ai.pi.swarm.browser.enable;
+      seniorSwarmEnabled = c.badwater.ai.pi.seniorSwarm.enable;
+      browserEnabled = c.badwater.ai.pi.seniorSwarm.browser.enable;
       selected =
         map (p: {
           inherit (p) name;
@@ -298,11 +298,13 @@
         then ""
         else c.keybindings
       )))) ["defaultOff" "opted" "duplicate" "baseline" "combined" "explicitSettings" "browserOff" "contextOff" "contextOnly" "piOff" "explicitSubagents" "bounds"]);
-in {
-  inherit matrix;
-  sources = pkgs.linkFarm "swarm-policy-generated-sources" (lib.imap0 (i: path: {
-      name = toString i;
-      inherit path;
-    })
-    sources);
-}
+in
+  assert (evaluate {}).options.badwater.ai.pi ? seniorSwarm;
+  assert !((evaluate {}).options.badwater.ai.pi ? swarm); {
+    inherit matrix;
+    sources = pkgs.linkFarm "badwater-senior-swarm-policy-generated-sources" (lib.imap0 (i: path: {
+        name = toString i;
+        inherit path;
+      })
+      sources);
+  }

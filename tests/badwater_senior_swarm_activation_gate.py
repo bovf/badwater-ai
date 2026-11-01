@@ -34,7 +34,7 @@ def run(name, dry=False, fail=False):
     assert 'writeBoundary' in case['mcpAfter']
     env = dict(os.environ); env.pop('DRY_RUN', None)
     if dry: env['DRY_RUN'] = '1'
-    result = subprocess.run([sys.argv[2] + '/bin/bash', '-e', '-c', 'source "$1"; eval "$2"', 'swarm-mcp-gate', case['activationLibrary'], case['mcp']], env=env, capture_output=True, text=True, timeout=20)
+    result = subprocess.run([sys.argv[2] + '/bin/bash', '-e', '-c', 'source "$1"; eval "$2"', 'badwater-senior-swarm-mcp-gate', case['activationLibrary'], case['mcp']], env=env, capture_output=True, text=True, timeout=20)
     assert result.returncode == (1 if fail else 0), (name, result.stdout, result.stderr)
     assert 'synthetic-only-private' not in result.stdout + result.stderr
     if not dry and not fail:
@@ -62,7 +62,7 @@ declaration = next(p for p in re.findall(r'/nix/store/[^\s\\]+', cases['opted'][
 target.symlink_to(declaration)
 # run() expects existing private regular modes; this migration is checked separately.
 case = cases['opted']
-result = subprocess.run([sys.argv[2] + '/bin/bash', '-e', '-c', 'source "$1"; eval "$2"', 'swarm-store-migration', case['activationLibrary'], case['mcp']], capture_output=True, text=True, timeout=20)
+result = subprocess.run([sys.argv[2] + '/bin/bash', '-e', '-c', 'source "$1"; eval "$2"', 'badwater-senior-swarm-store-migration', case['activationLibrary'], case['mcp']], capture_output=True, text=True, timeout=20)
 assert result.returncode == 0 and not result.stdout and not result.stderr
 assert not target.is_symlink() and target.stat().st_mode & 0o777 == 0o644
 assert owner.stat().st_mode & 0o777 == 0o600
