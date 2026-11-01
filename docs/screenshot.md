@@ -28,4 +28,4 @@ Original artifacts/receipts remain private; image content is returned only via
 an explicit sharing call, not capture itself. These are tool/workflow guardrails,
 not OS isolation or proof that arbitrary model output is correct.
 
-[Producer modes, backend limits and tests](https://gitlab.dobryops.com/nix/pi-nix/-/blob/feature/senior-swarm/docs/screenshot.md).
+[Producer modes, backend limits and tests](https://github.com/bovf/pi-nix/blob/main/docs/screenshot.md).
