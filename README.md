@@ -107,6 +107,13 @@ connection timing. The additive default preserves Pi's normal tools; an explicit
 `extraSettings.defaultTools` still wins. Users intentionally disabling codemode
 should select Chrome's direct/lazy exposure. No browser is launched at startup.
 
+## GitLab client (default off)
+
+`badwater.ai.pi.gitlab` selects the managed skill/CLI and registers a disabled
+native HTTPS MCP entry with exact read-tool overrides. Explicit host and human
+authorization are required; no credentials, global GLab configuration or second
+MCP owner are written. [Options, permissions and validation](docs/gitlab.md).
+
 ## Badwater Senior Swarm (default off)
 
 ```nix

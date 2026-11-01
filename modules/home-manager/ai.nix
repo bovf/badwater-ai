@@ -250,7 +250,10 @@
     lib.optionalAttrs cfg.pi.graphify.mcp.enable {graphify = graphifyMcpEntry;}
     // lib.optionalAttrs cfg.pi.webSearch.enable {web-search = webSearchMcpEntry;};
   enabledPiServers = builtinPiServers // cfg.pi.mcpServers;
-  hasCodemodeServers = builtins.any (s: (s.exposure or "codemode") == "codemode") (builtins.attrValues cfg.pi.mcpServers);
+  hasCodemodeServers = builtins.any (s:
+    (s.exposure or "codemode")
+    == "codemode"
+    || (builtins.isAttrs (s.toolExposure or {}) && builtins.any (mode: mode == "codemode") (builtins.attrValues (s.toolExposure or {})))) (builtins.attrValues cfg.pi.mcpServers);
   piMcpServers = {
     mcpServers = lib.optionalAttrs cfg.pi.enable enabledPiServers;
     legacyServers =
@@ -321,6 +324,7 @@ in {
     ./options.nix
     ./rea.nix
     ./badwater-senior-swarm.nix
+    ./gitlab.nix
     ./artcraft.nix
     ./video-editing.nix
   ];

@@ -139,7 +139,7 @@
       mcpServers = lib.mkOption {
         type = lib.types.attrsOf lib.types.attrs;
         default = {};
-        description = "Additional server declarations merged by the sole badwaterPiMcp owner. Use an absolute stdio command with string args (optional type=stdio), OR url with optional type=http/streamable-http. HTTP requires HTTPS (exact loopback HTTP only for private fixtures), no userinfo/query/fragment, and no command/args/env/cwd or managed headers/auth/oauth. Put auth only in private writable runtime configuration, never literal credentials in Nix-store declarations. Names must be unique after '-'/'_' normalization; exposure is codemode/deferred/direct/hidden.";
+        description = "Additional server declarations merged by the sole badwaterPiMcp owner. Use an absolute stdio command with string args (optional type=stdio), OR url with optional type=http/streamable-http. HTTP requires HTTPS (exact loopback HTTP only for private fixtures), no userinfo/query/fragment, and no command/args/env/cwd or managed headers/auth/oauth. Put auth only in private writable runtime configuration, never literal credentials in Nix-store declarations. Names must be unique after '-'/'_' normalization; exposure is codemode/deferred/direct/hidden. Optional enabled is boolean, description is text, and toolExposure maps nonempty tool names/patterns to those same exposure modes.";
       };
 
       graphify = {

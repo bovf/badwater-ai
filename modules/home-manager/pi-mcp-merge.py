@@ -68,8 +68,15 @@ def validate_managed(entry):
         raise ValueError('managed MCP command/args schema is invalid; original file preserved')
     if any(k in entry for k in ('headers', 'auth', 'oauth')):
         raise ValueError('managed MCP credentials must remain in private runtime configuration; original file preserved')
-    if entry.get('exposure', 'deferred') not in ('codemode', 'deferred', 'direct', 'hidden'):
+    exposures = ('codemode', 'deferred', 'direct', 'hidden')
+    if entry.get('exposure', 'deferred') not in exposures:
         raise ValueError('managed MCP exposure is invalid; original file preserved')
+    if 'enabled' in entry and type(entry['enabled']) is not bool:
+        raise ValueError('managed MCP enabled must be boolean; original file preserved')
+    if 'description' in entry and not isinstance(entry['description'], str):
+        raise ValueError('managed MCP description must be text; original file preserved')
+    if 'toolExposure' in entry and (not isinstance(entry['toolExposure'], dict) or not all(isinstance(key, str) and key and value in exposures for key, value in entry['toolExposure'].items())):
+        raise ValueError('managed MCP tool exposure is invalid; original file preserved')
 
 
 def merge(declaration, target, manifest):

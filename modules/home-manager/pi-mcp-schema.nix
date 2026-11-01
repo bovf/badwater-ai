@@ -20,8 +20,12 @@
     && (builtins.elemAt parsed 0 == "https" || builtins.elem (builtins.elemAt parsed 1) ["localhost" "127.0.0.1" "[::1]"])
     && (builtins.elemAt parsed 3 == null || lib.toInt (builtins.elemAt parsed 3) <= 65535);
   absent = names: lib.all (name: !(builtins.hasAttr name server)) names;
+  exposures = ["codemode" "deferred" "direct" "hidden"];
 in
-  builtins.elem (server.exposure or "deferred") ["codemode" "deferred" "direct" "hidden"]
+  builtins.elem (server.exposure or "deferred") exposures
+  && (!(server ? enabled) || builtins.isBool server.enabled)
+  && (!(server ? description) || builtins.isString server.description)
+  && (!(server ? toolExposure) || (builtins.isAttrs server.toolExposure && lib.all (name: name != "" && builtins.elem server.toolExposure.${name} exposures) (builtins.attrNames server.toolExposure)))
   && (
     if http
     then

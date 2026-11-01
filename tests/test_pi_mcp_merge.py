@@ -167,6 +167,23 @@ class HTTPMerge(MCPFixture):
         self.apply({'context7': self.http}); self.assertEqual((self.target.read_bytes(), self.target.stat().st_mtime_ns), before)
         self.apply({}); self.assertEqual(self.contents()['mcpServers'], {'user': original['mcpServers']['user']})
 
+    def test_disabled_read_allowlist_preserves_private_auth_and_removes_old_tool_exposure(self):
+        entry = {'url': 'https://gitlab.example.test/api/v4/mcp', 'enabled': False, 'exposure': 'hidden', 'toolExposure': {'get_project': 'codemode'}, 'description': 'Read-first fixture'}
+        self.target.parent.mkdir()
+        private = {'oauth': {'clientId': 'synthetic-private-client'}, 'auth': {'provider': 'fixture'}}
+        old = {**entry, **private, 'enabled': True, 'toolExposure': {'save_project': 'direct'}}
+        self.target.write_text(json.dumps({'mcpServers': {'badwater-gitlab': old}})); self.target.chmod(0o600)
+        self.apply({'badwater-gitlab': entry})
+        self.assertEqual(self.contents()['mcpServers']['badwater-gitlab'], {**entry, **private})
+        self.assertEqual(self.target.stat().st_mode & 0o777, 0o600)
+        before = self.target.read_bytes(); self.apply({'badwater-gitlab': entry}); self.assertEqual(self.target.read_bytes(), before)
+
+    def test_invalid_enabled_description_and_tool_exposure_preserve_files(self):
+        self.apply({'fixture': self.http}); before = self.target.read_bytes(); owner = self.owner.read_bytes()
+        for field, value in [('enabled', 'false'), ('enabled', 0), ('description', []), ('toolExposure', []), ('toolExposure', {'': 'codemode'}), ('toolExposure', {'get_project': 'unknown'}), ('toolExposure', {'get_project': []})]:
+            with self.assertRaises(ValueError): self.apply({'fixture': {**self.http, field: value}})
+            self.assertEqual(self.target.read_bytes(), before); self.assertEqual(self.owner.read_bytes(), owner)
+
     def test_transport_migrations_clear_only_incompatible_fields(self):
         self.apply({'context7': {**self.entry, 'type': 'stdio', 'env': {'KEEP': 'synthetic-only'}, 'cwd': '/fixture'}})
         d = self.contents(); d['mcpServers']['context7'].update({'oauth': {'clientSecret': 'synthetic-only'}, 'auth': {'provider': 'fixture'}, 'metadata': {'keep': True}}); self.target.write_text(json.dumps(d))
