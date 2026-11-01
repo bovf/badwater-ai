@@ -325,6 +325,7 @@ in {
     ./rea.nix
     ./badwater-senior-swarm.nix
     ./gitlab.nix
+    ./screenshot.nix
     ./artcraft.nix
     ./video-editing.nix
   ];

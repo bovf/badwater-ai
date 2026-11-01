@@ -107,6 +107,13 @@ connection timing. The additive default preserves Pi's normal tools; an explicit
 `extraSettings.defaultTools` still wins. Users intentionally disabling codemode
 should select Chrome's direct/lazy exposure. No browser is launched at startup.
 
+## Screenshot evidence (default off)
+
+`badwater.ai.pi.screenshot.enable` selects the Linux skill/CLI and passive stdio
+MCP through the sole existing owner. Captures, GUI focus/clipboard changes,
+model-image sharing and publication need distinct approved scope. No WM settings
+or credentials change. [Policy and backend contract](docs/screenshot.md).
+
 ## GitLab client (default off)
 
 `badwater.ai.pi.gitlab` selects the managed skill/CLI and registers a disabled
