@@ -86,12 +86,14 @@ in {
       ];
     }
     (lib.mkIf swarm.enable {
-      badwater.ai.pi.packages =
+      # Keep the consumer's existing extension load order; dedup its subagent first.
+      badwater.ai.pi.packages = lib.mkAfter (
         lib.optional (swarm.package != null) {
           name = "badwater-swarm";
           package = swarm.package;
         }
-        ++ lib.optional (subagents != null) subagents;
+        ++ lib.optional (subagents != null) subagents
+      );
       home.packages = lib.optional (swarm.browser.enable && linux && swarm.browser.package != null) swarm.browser.package;
     })
     (lib.mkIf swarm.context7.enable {

@@ -33,8 +33,9 @@ passthru metadata is required by this module.
 
 Enabling selects `badwater-swarm` and the producer's existing
 `pkgs.piPackages.pi-subagents` through `badwater.ai.pi.packages`. Existing equal
-name/output selections deduplicate. Different outputs for the same name fail
-closed; reconcile the selection explicitly. If the producer does not expose
+name/output selections deduplicate. Auto-added packages use `mkAfter`, preserving
+the consumer's existing order and first selected subagent output. Different
+outputs for the same name fail closed; reconcile the selection explicitly. If the producer does not expose
 pi-subagents, an explicit `packages` selection with that name is required. The
 normal stable links `~/.pi/agent/nix-packages/<name>` are used. Disabled homes do
 not force the swarm, subagents or browser packages. No global subagent settings,
@@ -116,9 +117,10 @@ Once a name is owned, deliberate stdio-to-HTTP migration removes stale
 command/args/env/cwd/type; HTTP-to-stdio removes url/headers/type (omitted args
 restore the empty-args identity). Unrelated metadata and private auth/oauth
 metadata are retained unless explicitly removed in writable configuration.
-Same-HTTP user headers remain opaque. Inspect/remove stale private auth when
-intentionally changing endpoints: retained auth is not authorization to send it
-to a different service. Disable removes only owned registrations, not auth.json,
+Same-endpoint HTTP user headers remain opaque. An owned HTTP URL change with
+private headers/auth/oauth now fails before any write: explicitly reconcile the
+private local declaration before changing endpoints. Retained auth is not
+authorization to send it to a different service. Disable removes only owned registrations, not auth.json,
 models/settings, user projects/caches or unrelated registrations. The existing
 ownership manifest format remains version 1/names only, with crash recovery.
 Regular private modes stay private; new MCP/store-symlink migration retains 0644

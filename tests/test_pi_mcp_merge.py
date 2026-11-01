@@ -114,6 +114,19 @@ class HTTPMerge(MCPFixture):
         super().setUp()
         self.http = {'url': 'https://mcp.context7.com/mcp', 'exposure': 'codemode'}
 
+    def test_owned_http_endpoint_change_does_not_forward_private_auth(self):
+        self.apply({'context7': self.http})
+        document = self.contents()
+        document['mcpServers']['context7']['headers'] = {'Authorization': 'synthetic-private-only'}
+        self.target.write_text(json.dumps(document)); self.target.chmod(0o600)
+        before, owner = self.target.read_bytes(), self.owner.read_bytes()
+        with self.assertRaisesRegex(ValueError, 'explicit local reconciliation'):
+            self.apply({'context7': {**self.http, 'url': 'https://different.example/mcp'}})
+        self.assertEqual(self.target.read_bytes(), before); self.assertEqual(self.owner.read_bytes(), owner)
+        self.assertEqual(self.target.stat().st_mode & 0o777, 0o600)
+        self.apply({'context7': self.http})
+        self.assertEqual(self.contents()['mcpServers']['context7']['headers'], document['mcpServers']['context7']['headers'])
+
     def test_http_aliases_and_fixture_loopbacks(self):
         for transport in [None, 'http', 'streamable-http']:
             for url in ['https://mcp.context7.com/mcp', 'https://example.com:443/mcp', 'http://localhost:1234/mcp', 'http://127.0.0.1/mcp', 'http://[::1]:1234/mcp']:

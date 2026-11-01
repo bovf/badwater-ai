@@ -31,8 +31,10 @@ for index, filename in enumerate(filenames):
     opted = cases['opted']
     assert {p['name'] for p in opted['selected']} == {'badwater-swarm', 'pi-subagents'}
     assert len(opted['selected']) == 2
-    assert cases['duplicate'] == opted, 'identical explicit selection must deduplicate'
-    assert cases['explicitSubagents']['selected'] == opted['selected']
+    identities = lambda selected: {p['name']: p['package'] for p in selected}
+    for name in ['duplicate', 'explicitSubagents']:
+        assert identities(cases[name]['selected']) == identities(opted['selected']), 'identical explicit outputs must deduplicate'
+        assert [p['name'] for p in cases[name]['selected']] == ['pi-subagents', 'badwater-swarm'], 'consumer-first extension order must survive'
     assert opted['mcpServers'] == {'context7': {'url': 'https://mcp.context7.com/mcp', 'exposure': 'codemode'}}
     assert cases['contextOff']['mcpServers'] == {}
     assert not cases['contextOnly']['swarmEnabled'] and not cases['contextOnly']['selected']

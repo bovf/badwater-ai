@@ -110,6 +110,9 @@ def merge(declaration, target, manifest):
         old = servers.get(name, {})
         if name in servers and name not in owned and transport_identity(old) != transport_identity(entry):
             raise ValueError('requested managed MCP name conflicts with an unrelated server; rename or remove that declaration explicitly')
+        previous = transport_identity(old)
+        if previous and previous[0] == 'http' and 'url' in entry and previous != transport_identity(entry) and any(k in old for k in ('headers', 'auth', 'oauth')):
+            raise ValueError('HTTP endpoint change with private auth requires explicit local reconciliation; original file preserved')
         # Owned transport migrations remove incompatible fields, not user auth or
         # unrelated metadata. HTTP headers must never become a stdio environment.
         kept = dict(old) if isinstance(old, dict) else {}
