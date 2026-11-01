@@ -36,6 +36,42 @@ def atomic(path, value, mode):
         Path(name).unlink(missing_ok=True)
 
 
+def transport_identity(entry):
+    """Identity is transport plus exact endpoint, never exposure or opaque auth.
+
+    HTTP aliases are equivalent, but distinct URLs are not: do not normalize away
+    paths/ports that can select a different authorization server.
+    """
+    if not isinstance(entry, dict):
+        return None
+    if 'url' in entry:
+        if entry.get('type', 'http') not in ('http', 'streamable-http') or any(k in entry for k in ('command', 'args', 'env', 'cwd')):
+            return None
+        return ('http', entry['url'])
+    if entry.get('type', 'stdio') != 'stdio' or not isinstance(entry.get('command'), str):
+        return None
+    if any(k in entry for k in ('headers',)):
+        return None
+    return ('stdio', entry['command'], entry.get('args', []))
+
+
+def validate_managed(entry):
+    identity = transport_identity(entry)
+    if identity is None:
+        raise ValueError('managed MCP transport schema is invalid; original file preserved')
+    if identity[0] == 'http':
+        url = entry['url']
+        parsed = re.fullmatch(r'(https?)://([A-Za-z0-9][A-Za-z0-9.-]*|\[::1\])(:([1-9][0-9]{0,4}))?(/[^\s?#@\\]*)?', url) if isinstance(url, str) else None
+        if not parsed or (parsed[1] != 'https' and parsed[2] not in ('localhost', '127.0.0.1', '[::1]')) or (parsed[4] and int(parsed[4]) > 65535):
+            raise ValueError('managed MCP URL must be HTTPS or fixture loopback HTTP without credentials/query/fragment; original file preserved')
+    elif not entry['command'].startswith('/') or not isinstance(entry.get('args', []), list) or not all(isinstance(arg, str) for arg in entry.get('args', [])):
+        raise ValueError('managed MCP command/args schema is invalid; original file preserved')
+    if any(k in entry for k in ('headers', 'auth', 'oauth')):
+        raise ValueError('managed MCP credentials must remain in private runtime configuration; original file preserved')
+    if entry.get('exposure', 'deferred') not in ('codemode', 'deferred', 'direct', 'hidden'):
+        raise ValueError('managed MCP exposure is invalid; original file preserved')
+
+
 def merge(declaration, target, manifest):
     for parent in target.parents:
         if parent.is_symlink():
@@ -53,16 +89,12 @@ def merge(declaration, target, manifest):
     if not isinstance(legacy, dict) or not all(isinstance(name, str) and isinstance(entry, dict) for name, entry in legacy.items()):
         raise ValueError('unsupported legacy managed MCP declaration schema; original file preserved')
     for entry in [*desired.values(), *legacy.values()]:
-        if not isinstance(entry.get('command'), str) or not entry['command'].startswith('/') or not isinstance(entry.get('args', []), list) or not all(isinstance(arg, str) for arg in entry.get('args', [])):
-            raise ValueError('managed MCP command/args schema is invalid; original file preserved')
-        if entry.get('exposure', 'deferred') not in ('codemode', 'deferred', 'direct', 'hidden'):
-            raise ValueError('managed MCP exposure is invalid; original file preserved')
+        validate_managed(entry)
     servers = dict(current.get('mcpServers', {}))
     owned = set(owner['servers'])
-    # Adopt only an exact old managed command/args pair, retaining opacity of unrelated entries.
+    # Adopt only an exact transport identity, retaining opacity of unrelated entries.
     for name, entry in legacy.items():
-        old = servers.get(name)
-        if isinstance(old, dict) and old.get('command') == entry['command'] and old.get('args', []) == entry.get('args', []):
+        if transport_identity(servers.get(name)) == transport_identity(entry):
             owned.add(name)
     if not desired and not owned and not manifest.exists():
         return
@@ -75,11 +107,16 @@ def merge(declaration, target, manifest):
             raise ValueError('managed MCP namespace conflicts after builtin normalization; original file preserved')
         normalized[key] = name
     for name, entry in desired.items():
-        # Keep unrelated optional fields of a managed entry, e.g. user metadata; command/args/exposure remain declarative.
         old = servers.get(name, {})
-        if name in servers and name not in owned and (not isinstance(old, dict) or old.get('command') != entry['command'] or old.get('args', []) != entry.get('args', [])):
+        if name in servers and name not in owned and transport_identity(old) != transport_identity(entry):
             raise ValueError('requested managed MCP name conflicts with an unrelated server; rename or remove that declaration explicitly')
-        servers[name] = {**(old if isinstance(old, dict) else {}), **entry}
+        # Owned transport migrations remove incompatible fields, not user auth or
+        # unrelated metadata. HTTP headers must never become a stdio environment.
+        kept = dict(old) if isinstance(old, dict) else {}
+        incompatible = ('command', 'args', 'env', 'cwd') if 'url' in entry else ('url', 'headers', 'args')
+        for key in (*incompatible, 'type'):
+            kept.pop(key, None)
+        servers[name] = {**kept, **entry}
     updated = {**current, 'mcpServers': servers}
     # Keep private modes on existing regular files; store-symlink migrations use the default.
     target_mode = target.stat().st_mode & 0o777 if target.exists() and not target.is_symlink() else 0o644

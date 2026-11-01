@@ -8,13 +8,15 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location('merge', Path(__file__).parents[1] / 'modules/home-manager/pi-mcp-merge.py')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
-class MCPMerge(unittest.TestCase):
+class MCPFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name); self.target = self.root / 'agent/mcp.json'; self.owner = self.root / 'agent/badwater-mcp-owned.json'
         self.entry = {'command': '/nix/store/fixture/bin/server', 'args': ['mcp'], 'exposure': 'codemode'}
     def apply(self, servers, legacy=None): m.merge({'mcpServers': servers, 'legacyServers': legacy or {}}, self.target, self.owner)
     def contents(self): return json.loads(self.target.read_text())
+
+class MCPMerge(MCPFixture):
     def test_disabled_without_state_creates_nothing(self):
         self.apply({}); self.assertFalse(self.target.parent.exists())
     def test_only_new_servers_preserve_unrelated_opaque_fields(self):
@@ -106,5 +108,83 @@ class MCPMerge(unittest.TestCase):
         with patch.object(m.os, 'fsync', fail_directory):
             with self.assertRaisesRegex(OSError, 'directory fsync'): self.apply({'new': self.entry})
         self.assertEqual(json.loads(self.owner.read_text())['servers'], ['new', 'old']); self.assertEqual(list(self.contents()['mcpServers']), ['old']); self.apply({}); self.assertEqual(self.contents()['mcpServers'], {})
+
+class HTTPMerge(MCPFixture):
+    def setUp(self):
+        super().setUp()
+        self.http = {'url': 'https://mcp.context7.com/mcp', 'exposure': 'codemode'}
+
+    def test_http_aliases_and_fixture_loopbacks(self):
+        for transport in [None, 'http', 'streamable-http']:
+            for url in ['https://mcp.context7.com/mcp', 'https://example.com:443/mcp', 'http://localhost:1234/mcp', 'http://127.0.0.1/mcp', 'http://[::1]:1234/mcp']:
+                entry = {**self.http, 'url': url}
+                if transport: entry['type'] = transport
+                self.apply({'context7': entry})
+                self.assertEqual(self.contents()['mcpServers']['context7'], entry)
+
+    def test_invalid_http_schema_never_writes_or_discloses(self):
+        import subprocess
+        self.target.parent.mkdir(); self.target.write_text('{}')
+        bad_urls = [None, 1, [], 'http://example.com/mcp', 'http://localhost.evil/mcp', 'http://127.1/mcp', 'http://2130706433/mcp', 'http://[::ffff:127.0.0.1]/mcp', 'https://synthetic-secret@example.com/mcp', 'https://example.com/mcp?token=synthetic-secret', 'https://example.com/mcp#synthetic-secret', 'https://example.com:0/mcp', 'https://example.com:65536/mcp', 'https://example.com:00080/mcp', 'https://example.com\\\\evil/mcp', 'https://example.com/\n', '//example.com/mcp', 'https:///mcp', 'file:///tmp/mcp']
+        entries = [{**self.http, 'url': url} for url in bad_urls]
+        entries += [{**self.http, key: value} for key, value in [('command', '/server'), ('args', []), ('env', {}), ('cwd', '/tmp'), ('headers', {'Authorization': 'synthetic-secret'}), ('auth', {}), ('oauth', {}), ('type', 'stdio'), ('type', 'sse'), ('exposure', 'unknown')]]
+        entries += [{**self.entry, 'type': 'http'}, {**self.entry, 'headers': {}}]
+        declaration = self.root / 'managed.json'
+        for entry in entries:
+            declaration.write_text(json.dumps({'mcpServers': {'context7': entry}}))
+            result = subprocess.run([os.sys.executable, m.__file__, str(declaration), str(self.target), str(self.owner)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1, entry)
+            self.assertEqual(result.stdout, '')
+            self.assertNotIn('synthetic-secret', result.stderr)
+            self.assertEqual(self.target.read_text(), '{}'); self.assertFalse(self.owner.exists())
+
+    def test_http_same_identity_adoption_preserves_private_auth_and_modes(self):
+        self.target.parent.mkdir()
+        auth = {'auth': {'provider': 'fixture'}, 'oauth': {'clientSecret': 'synthetic-secret'}, 'headers': {'Authorization': 'synthetic-secret'}, 'localMetadata': [False, 'é']}
+        original = {'mcpServers': {'context7': {**self.http, 'type': 'streamable-http', **auth}, 'user': {'url': 'https://user.example/mcp', **auth}}, 'preferences': {'keep': True}}
+        self.target.write_text(json.dumps(original)); self.target.chmod(0o600)
+        self.apply({'context7': self.http})
+        out = self.contents()
+        self.assertEqual(out['mcpServers']['context7'], {**self.http, **auth})
+        self.assertEqual(out['mcpServers']['user'], original['mcpServers']['user'])
+        self.assertEqual(self.target.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.owner.stat().st_mode & 0o777, 0o600)
+        self.assertNotIn('synthetic-secret', self.owner.read_text())
+        before = (self.target.read_bytes(), self.target.stat().st_mtime_ns)
+        self.apply({'context7': self.http}); self.assertEqual((self.target.read_bytes(), self.target.stat().st_mtime_ns), before)
+        self.apply({}); self.assertEqual(self.contents()['mcpServers'], {'user': original['mcpServers']['user']})
+
+    def test_transport_migrations_clear_only_incompatible_fields(self):
+        self.apply({'context7': {**self.entry, 'type': 'stdio', 'env': {'KEEP': 'synthetic-only'}, 'cwd': '/fixture'}})
+        d = self.contents(); d['mcpServers']['context7'].update({'oauth': {'clientSecret': 'synthetic-only'}, 'auth': {'provider': 'fixture'}, 'metadata': {'keep': True}}); self.target.write_text(json.dumps(d))
+        self.apply({'context7': {**self.http, 'type': 'streamable-http'}})
+        out = self.contents()['mcpServers']['context7']
+        for key in ['command', 'args', 'env', 'cwd']: self.assertNotIn(key, out)
+        self.assertEqual(out['oauth'], {'clientSecret': 'synthetic-only'})
+        d = self.contents(); d['mcpServers']['context7']['headers'] = {'Authorization': 'synthetic-only'}; self.target.write_text(json.dumps(d))
+        self.apply({'context7': self.entry})
+        out = self.contents()['mcpServers']['context7']
+        for key in ['url', 'headers', 'type']: self.assertNotIn(key, out)
+        self.assertEqual(out['metadata'], {'keep': True}); self.assertEqual(out['auth'], {'provider': 'fixture'}); self.assertIn('oauth', out)
+        # Re-enable HTTP: absent stdio type must not leave a stale HTTP discriminator.
+        self.apply({'context7': self.http}); self.assertEqual(self.contents()['mcpServers']['context7']['url'], self.http['url'])
+
+    def test_owned_stdio_omitted_args_restore_default_identity(self):
+        self.apply({'fixture': self.entry})
+        self.apply({'fixture': {'command': self.entry['command']}})
+        self.assertEqual(self.contents()['mcpServers']['fixture'], {'command': self.entry['command'], 'exposure': 'codemode'})
+
+    def test_http_conflicts_use_exact_url_and_transport_identity(self):
+        for old in [{**self.http, 'url': 'https://other.example/mcp'}, {**self.http, 'url': self.http['url'] + '/'}, self.entry, {**self.http, 'command': '/mixed'}, {**self.http, 'type': 'sse'}]:
+            self.target.parent.mkdir(exist_ok=True); self.target.write_text(json.dumps({'mcpServers': {'context7': old}})); before = self.target.read_bytes()
+            with self.assertRaisesRegex(ValueError, 'conflicts'): self.apply({'context7': self.http})
+            self.assertEqual(self.target.read_bytes(), before); self.assertFalse(self.owner.exists())
+
+    def test_http_legacy_exact_identity_and_normalized_conflict(self):
+        self.target.parent.mkdir(); self.target.write_text(json.dumps({'mcpServers': {'context7': {**self.http, 'type': 'http', 'oauth': {'keep': 'private'}}}}))
+        self.apply({}, {'context7': self.http}); self.assertEqual(self.contents()['mcpServers'], {})
+        self.owner.unlink(); self.target.write_text(json.dumps({'mcpServers': {'context_7': self.http}}))
+        with self.assertRaisesRegex(ValueError, 'normalization'): self.apply({'context-7': self.http})
+        self.assertFalse(self.owner.exists())
 
 if __name__=='__main__':unittest.main()

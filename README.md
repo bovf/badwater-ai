@@ -107,6 +107,34 @@ connection timing. The additive default preserves Pi's normal tools; an explicit
 `extraSettings.defaultTools` still wins. Users intentionally disabling codemode
 should select Chrome's direct/lazy exposure. No browser is launched at startup.
 
+## Approval-gated swarm (default off)
+
+```nix
+badwater.ai.pi = {
+  enable = true;
+  swarm.enable = true; # adds badwater-swarm + existing pi-subagents, deduplicated
+  # swarm.maxConcurrent = 6; swarm.maxAgents = 32; swarm.maxRepairCycles = 2;
+  # swarm.roleModels = {}; # inherit parent models unless explicitly selected
+  # swarm.browser.enable = false; # Linux default on; other platforms off
+  # swarm.context7.enable = false; # defaults on with swarm, via sole MCP owner
+};
+```
+
+Consumers supply `pkgs.badwater-swarm`, existing `pkgs.piPackages.pi-subagents`,
+and on Linux `pkgs.badwater-swarm-browser`. No global subagent configuration or
+provider/model choice is replaced. Explicit `extraSettings.badwaterSwarm` wins
+recursively over option-generated defaults, including the absolute browser
+command. Context7 is an HTTPS/codemode declaration, not an OAuth/network action.
+The existing additive/dry-run-aware `badwaterPiMcp` alone owns registration;
+Graphify/web/REA/context and opaque private auth remain intact. Managed MCP now
+supports mutually exclusive stdio and HTTP/streamable-http, strict credential-free
+URLs, identity conflicts and owned transport migrations.
+
+See [swarm policy, schema, precedence and offline checks](docs/swarm.md) for
+bounds, package interfaces, browser/auth consent and fake-package/native builtin
+HTTP fixture coverage. Installation is not permission to run a swarm, launch a
+browser, make model requests or contact Context7.
+
 ## OpenAI subscription maximum context
 
 ```nix

@@ -71,6 +71,16 @@
       defaultTools = ["+codemode"];
     }
     // cfg.pi.extraSettings
+    // lib.optionalAttrs cfg.pi.swarm.enable {
+      # Explicit settings (including role models/browserCommand) win recursively.
+      badwaterSwarm = lib.recursiveUpdate {
+        inherit (cfg.pi.swarm) maxConcurrent maxAgents maxRepairCycles roleModels;
+        browserCommand =
+          if cfg.pi.swarm.browser.enable && cfg.pi.swarm.browser.package != null
+          then "${cfg.pi.swarm.browser.package}/bin/swarm-browser"
+          else null;
+      } (cfg.pi.extraSettings.badwaterSwarm or {});
+    }
     // lib.optionalAttrs cfg.pi.openai.maxContext {
       compaction = lib.recursiveUpdate {modelOverrides = openaiCompaction;} (cfg.pi.extraSettings.compaction or {});
     }
@@ -310,6 +320,7 @@ in {
   imports = [
     ./options.nix
     ./rea.nix
+    ./swarm.nix
     ./artcraft.nix
     ./video-editing.nix
   ];
@@ -505,8 +516,8 @@ in {
           message = "Pi MCP server names must be valid and unique after builtin '-'/'_' normalization.";
         }
         {
-          assertion = lib.all (s: builtins.isString (s.command or null) && lib.hasPrefix "/" s.command && builtins.isList (s.args or []) && lib.all builtins.isString (s.args or []) && builtins.elem (s.exposure or "deferred") ["codemode" "deferred" "direct" "hidden"]) (builtins.attrValues cfg.pi.mcpServers);
-          message = "Additional Pi MCP servers require absolute stdio commands, argument lists and supported builtin exposure.";
+          assertion = lib.all (import ./pi-mcp-schema.nix {inherit lib;}) (builtins.attrValues cfg.pi.mcpServers);
+          message = "Additional Pi MCP servers require mutually exclusive absolute stdio or HTTPS/loopback HTTP transports, no URL credentials/query/fragment or managed HTTP auth, and supported builtin exposure.";
         }
         {
           assertion = !cfg.pi.enable || !hasCodemodeServers || !(cfg.pi.extraSettings ? defaultTools) || (builtins.isList cfg.pi.extraSettings.defaultTools && lib.any (t: t == "+codemode" || t == "codemode") cfg.pi.extraSettings.defaultTools);
